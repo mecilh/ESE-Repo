@@ -8,7 +8,7 @@ Beware there could be some small errors present in the pdfs, it was done in a ru
 Feel free to text me in case of any errors or updates :3
 
 Fat Cat because it's pretty empty:
-	/\_____/\
+    /\_____/\
    /  o   o  \
   ( ==  ^  == )
    )         (
