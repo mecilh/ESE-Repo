@@ -1,0 +1,908 @@
+%=======================================================================
+%  IESE SOLVING MANUAL 1 -- INTRODUCTION AND MEASUREMENTS
+%=======================================================================
+\documentclass[11pt,a4paper,oneside]{book}
+\usepackage{iese_manual}
+
+\hypersetup{pdftitle={IESE Manual 1 -- Measurements}}
+
+\begin{document}
+\frontmatter
+
+\begingroup
+\thispagestyle{empty}\centering
+\vspace*{2.2cm}
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[0.5cm]
+{\Huge\bfseries\color{accent} Measurements \& Instruments}\\[0.35cm]
+{\LARGE A Solving Manual}\\[0.4cm]
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[1.2cm]
+{\large IESE Manual 1 of 3 }\\[1.6cm]
+{\footnotesize Typeset in \LaTeX{} with circuitikz and pgfplots.}
+\par\vspace*{\fill}
+\endgroup
+\clearpage
+
+\chapter*{How to use this manual}
+\addcontentsline{toc}{chapter}{How to use this manual}
+\markboth{How to use this manual}{How to use this manual}
+
+This manual turns the measurement and instrument material into a solving reference.
+Each \emph{type} of problem gets a \textbf{Protocol} (a numbered recipe), one
+fully \textbf{Worked Example} (the canonical one) and
+\textbf{Exercises} with solutions; theory sits in one paragraph at the point of
+use, with the derivation in a cross-referenced \textbf{appendix}.
+
+\begin{keyidea}
+\textbf{A measurement is three things}: a value, a unit, and an
+\emph{uncertainty}. The number alone is never enough to make a yes/no decision.
+Most of Chapter~\ref{ch:uncert} is about getting the uncertainty right ---
+especially how it \emph{propagates} when you combine measurements.
+\end{keyidea}
+
+\tableofcontents
+\clearpage
+\mainmatter
+
+%=======================================================================
+\chapter{Measurements and the SI system}\label{ch:si}
+%=======================================================================
+
+Before a single number is written down, two questions must already have answers:
+\emph{in what unit?} and \emph{traceable to what?} This chapter collects the
+metrological groundwork the subject opens with --- the modern definition of the
+International System of Units (SI), how a measurement is organised, and how any
+reading taken in the lab is ultimately tied back to a universal standard.
+
+\begin{keyidea}
+A measurement is a \emph{comparison}. Every value you report is implicitly the
+ratio of the measurand to a \emph{unit}, so the unit must mean the same thing for
+everyone --- which is what the SI guarantees --- and you must be able to prove your
+instrument still agrees with that unit --- which is what \emph{traceability} does.
+\end{keyidea}
+
+\section{The 2019 redefinition: from artefacts to constants}
+
+For most of its history the SI rested on \emph{artefacts}: physical objects whose
+properties \emph{defined} a unit. The archetype was the international prototype of
+the kilogram (IPK), a platinum--iridium cylinder kept near Paris; the kilogram
+\emph{was}, by definition, the mass of that object. Artefacts are fragile: they
+drift over decades, they can be damaged, and there is only one master --- so the
+entire world's mass scale depended on a single cylinder nobody could re-create.
+
+On 20 May 2019 the SI was redefined so that every base unit is fixed by assigning
+an \emph{exact} numerical value to a \emph{fundamental constant of nature}. Nature
+is the same everywhere and at all times, so a unit defined this way is reproducible
+in any suitably equipped laboratory, with no master object to guard.
+
+\begin{note}
+The redefinition did not perceptibly change the \emph{size} of any unit --- a
+kilogram still weighs a kilogram. It changed the \emph{definition}, trading a
+man-made object for an unchanging constant.
+\end{note}
+
+\section{The seven base units}\label{sec:baseunits}
+
+The SI is built on seven base units, each now pinned to a defining constant
+assigned an exact value. Every other unit is derived from these.
+
+\begin{table}[h]\centering\small
+\caption{The seven SI base units and their 2019 defining constants.}
+\label{tab:baseunits}
+\begin{tabular}{@{}llcl@{}}
+\toprule
+Quantity & Unit (symbol) & & Fixed by the exact value of\\
+\midrule
+Time                & second (s)    & & $\Delta\nu_{\mathrm{Cs}}=\qty{9192631770}{\hertz}$\\
+Length              & metre (m)     & & $c=\qty{299792458}{\meter\per\second}$\\
+Mass                & kilogram (kg) & & $h=\qty{6.62607015e-34}{\joule\second}$\\
+Electric current    & ampere (A)    & & $e=\qty{1.602176634e-19}{\coulomb}$\\
+Temperature         & kelvin (K)    & & $k=\qty{1.380649e-23}{\joule\per\kelvin}$\\
+Amount of substance & mole (mol)    & & $N_{\!A}=\qty{6.02214076e23}{\per\mole}$\\
+Luminous intensity  & candela (cd)  & & $K_{\mathrm{cd}}=\qty{683}{\lumen\per\watt}$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{note}
+The second and the speed of light come first for a reason: once the second is
+fixed by the caesium transition and $c$ is fixed exactly, the metre is
+\emph{defined} as the distance light travels in $1/c$ seconds. Several units
+chain off one another this way.
+\end{note}
+
+\section{Derived units}
+
+A derived unit is a product of powers of base units. Many keep an explicit form
+(area \unit{\meter\squared}, velocity \unit{\meter\per\second}); others earn a
+special name. The volt, for instance, is
+\[
+\unit{\volt}=\unit{\watt\per\ampere}
+            =\unit{\kilogram\meter\squared\per\ampere\per\second\cubed},
+\]
+and the ohm, farad, hertz, newton, joule and watt are all shorthands for specific
+base-unit combinations. Tracking the dimensions through a formula (a
+\emph{dimensional check}) is the cheapest sanity test there is: if the units on
+the two sides of an equation do not match, the equation is wrong.
+
+\section{The approach to a measurement}\label{sec:approach}
+
+A measurement is not just "read the display". A defensible result follows a
+method, captured below as a reusable recipe.
+
+\begin{protocol}[Take and report a measurement]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Define the measurand}: state exactly \emph{what} quantity, under
+        \emph{what} conditions (temperature, loading, frequency).
+  \item \textbf{Choose the method} --- direct or indirect
+        (\S\ref{sec:methods}) --- and an instrument whose range and resolution
+        suit the expected value.
+  \item \textbf{Account for the instrument's influence}: a real meter \emph{loads}
+        the circuit; decide whether that perturbation matters
+        (Chapter~\ref{ch:dmm}).
+  \item \textbf{Read value, unit and uncertainty} --- never the bare number
+        (Chapter~\ref{ch:uncert}).
+  \item \textbf{Propagate} the uncertainty if the result is computed from several
+        readings (Chapter~\ref{ch:uncert}, Appendix~\ref{app:prop}).
+  \item \textbf{Report} $x_0\pm\Delta x$ with its unit, and the conditions.
+\end{enumerate}
+\end{protocol}
+
+\section{Traceability}\label{sec:trace}
+
+\emph{Metrological traceability} is the property of a measurement result whereby it
+can be related to a stated reference through a documented, unbroken chain of
+calibrations, each contributing to the uncertainty. In practice the chain descends
+from the SI definition at the top to the instrument on your bench:
+
+\begin{itemize}[leftmargin=1.4cm,itemsep=1pt]
+  \item \textbf{BIPM} and the defining constants --- the SI itself;
+  \item \textbf{National metrology institutes} (e.g.\ INRiM in Italy) realise the
+        units and keep primary standards;
+  \item \textbf{Accredited calibration laboratories} calibrate reference
+        instruments against those primary standards;
+  \item \textbf{Your working instrument}, calibrated against a reference, carries a
+        certificate with its own uncertainty and a due date.
+\end{itemize}
+
+\begin{warning}
+Traceability is broken the moment a link is undocumented or out of date. An
+expired calibration sticker means the chain to the SI is no longer proven --- the
+reading may be fine, but you can no longer \emph{defend} it.
+\end{warning}
+
+\section{Classification of measurement methods}\label{sec:methods}
+
+\begin{description}[leftmargin=0pt,style=nextline]
+  \item[Direct methods] compare the measurand against a reference of the
+        \emph{same kind}: a ruler against a length, a balance against a reference
+        mass, a voltmeter that reads volts directly. The result is read in one
+        step.
+  \item[Indirect methods] obtain the measurand by \emph{computing} it from other
+        measured quantities through a known physical relation --- e.g.\ a
+        resistance from $R=V/I$ (measure $V$ and $I$, then divide), or power from
+        $P=V^2/R$. The catch is that every input's uncertainty propagates into the
+        result (Chapter~\ref{ch:uncert}).
+\end{description}
+
+\begin{wexample}[Classifying and tracing a resistance measurement]
+You read a resistor as \qty{50.0}{\ohm} on a digital multimeter (DMM) set to
+"\si{\ohm}", then also compute it from a separate $V$ and $I$ reading.
+\begin{itemize}[leftmargin=1.2cm,itemsep=1pt]
+  \item The DMM reading is a \textbf{direct} method: the instrument compares the
+        unknown against an internal reference and reports ohms in one step. Its
+        result is \textbf{traceable} only if the DMM's calibration certificate is
+        current.
+  \item The $R=V/I$ route is an \textbf{indirect} method: two readings, each with
+        its own uncertainty, combine. Because it is a ratio, the \emph{relative}
+        uncertainties add (Chapter~\ref{ch:uncert}):
+        $\varepsilon_R=\varepsilon_V+\varepsilon_I$.
+\end{itemize}
+Same quantity, two methods --- the direct one is simpler, the indirect one exposes
+where the error comes from.
+\end{wexample}
+
+\begin{exercise}
+Classify each as direct or indirect, and name the quantities whose uncertainty
+enters the result: (a) timing $10$ pendulum swings with a stopwatch to get one
+period; (b) measuring a temperature with a calibrated thermometer; (c) finding the
+input resistance of an amplifier from the divider
+$V_M=V_S\,R_{in}/(R+R_{in})$.
+\end{exercise}
+\begin{solution}
+(a) \textbf{Indirect}: you measure a total time $t_{10}$ and divide,
+$T=t_{10}/10$; only $t_{10}$ carries uncertainty (dividing by the exact integer
+$10$ also divides the absolute uncertainty, which is why you time ten swings).
+(b) \textbf{Direct}: the thermometer reads temperature in one step; traceable via
+its calibration. (c) \textbf{Indirect}:
+$R_{in}=V_M\,R/(V_S-V_M)$ is computed from $V_M$, $V_S$ and the known $R$; the
+difference $V_S-V_M$ in the denominator is the danger spot
+(Chapter~\ref{ch:uncert}).
+\end{solution}
+
+%=======================================================================
+\chapter{Measurements and uncertainty}\label{ch:uncert}
+%=======================================================================
+
+Every measured value $x$ comes with an uncertainty, written absolute
+($x=x_0\pm\Delta x$) or relative ($\varepsilon_x=\Delta x/x_0$, dimensionless).
+When a result is \emph{computed} from several measured quantities,
+$y=f(x_1,\dots,x_n)$, the uncertainty propagates by a first-order expansion
+(Appendix~\ref{app:prop}).
+
+\begin{protocol}[Propagate uncertainty through $y=f(x_1,\dots,x_n)$]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Write $y$ as the combination of the measured quantities.
+  \item \textbf{Classify} the operation and apply the rule:
+        \emph{sum/difference} add \emph{absolute} uncertainties
+        $\Delta y=\sum|\partial f/\partial x_i|\,\Delta x_i$;
+        \emph{product/ratio} add \emph{relative} uncertainties
+        $\varepsilon_y=\sum\varepsilon_{x_i}$.
+  \item \textbf{Watch differences of close numbers}: $a-b$ with $a\approx b$
+        makes $\varepsilon_y$ explode (catastrophic cancellation).
+  \item Report value, absolute and relative uncertainty.
+\end{enumerate}
+\end{protocol}
+
+The four elementary operations are applied to the \emph{same} inputs --- a
+useful calibration for your intuition before the surprising cases.
+
+\begin{wexample}[The four basic rules]
+Take $a=(15\pm0.5)\,\unit{\centi\meter}$ ($\varepsilon_a=\qty{3.3}{\percent}$) and
+$b=(10\pm0.5)\,\unit{\centi\meter}$ ($\varepsilon_b=\qty{5}{\percent}$).
+\begin{itemize}[leftmargin=1.2cm,itemsep=1pt]
+  \item \textbf{Sum} $y=a+b=(25\pm1)\,\unit{\centi\meter}$:
+        $\Delta y=\Delta a+\Delta b=\qty{1}{\centi\meter}$,
+        $\varepsilon_y=1/25=\qty{4}{\percent}$ --- between $\varepsilon_a$ and
+        $\varepsilon_b$.
+  \item \textbf{Difference} $y=a-b=(5\pm1)\,\unit{\centi\meter}$: the
+        \emph{same} $\Delta y=\qty{1}{\centi\meter}$, but now
+        $\varepsilon_y=1/5=\qty{20}{\percent}$ --- worse than either input,
+        because the value shrank while the uncertainty did not.
+  \item \textbf{Product} ($a=b=(10\pm0.5)\,\unit{\centi\meter}$):
+        $y=ab=(100\pm10)\,\unit{\centi\meter\squared}$,
+        $\varepsilon_y=\varepsilon_a+\varepsilon_b=\qty{10}{\percent}$.
+  \item \textbf{Ratio} (same inputs): $y=a/b=1.0\pm0.1$,
+        again $\varepsilon_y=\qty{10}{\percent}$ --- relative uncertainties add
+        for both products and ratios.
+\end{itemize}
+\end{wexample}
+
+\begin{wexample}[Catastrophic cancellation, $y=1/(a-b)$]
+$a=\qty{10.00(2)}{\centi\meter}$, $b=\qty{9.95(2)}{\centi\meter}$ (both
+$\varepsilon\approx\qty{0.2}{\percent}$ --- excellent). Yet
+$y_0=1/(a-b)=1/0.05=\qty{20}{\per\centi\meter}$ and, since
+$\Delta y=\dfrac{\Delta a+\Delta b}{(a-b)^2}=\dfrac{0.04}{0.0025}
+=\qty{16}{\per\centi\meter}$, we get $\varepsilon_y=16/20=\qty{80}{\percent}$.
+Two superb measurements produced a useless result --- because their difference is
+tiny.
+\end{wexample}
+
+\begin{exercise}
+(a) $c=(22\pm0.5)\,\unit{\centi\meter}$, $d=(21\pm0.5)\,\unit{\centi\meter}$: find
+$\varepsilon_z$ for $z=c-d$. (b) Measuring an input resistance via a known $R$ and
+the divider $V_M=V_S\frac{R_{in}}{R+R_{in}}$: why is $R\approx R_{in}$ best?
+\end{exercise}
+\begin{solution}
+(a) $z=\qty{1}{\centi\meter}$, $\Delta z=\Delta c+\Delta d=\qty{1}{\centi\meter}$,
+so $\varepsilon_z=1/1=\qty{100}{\percent}$ --- again a near-cancellation.
+(b) $R_{in}=\frac{V_M}{V_S-V_M}R$ has the difference $V_S-V_M$ in the denominator.
+If $R_{in}\gg R$ then $V_M\to V_S$ (denominator $\to0$, error blows up); if
+$R_{in}\ll R$ then $V_M\to0$ ($\varepsilon_{V_M}$ blows up). The sweet spot is
+$R\approx R_{in}$.
+\end{solution}
+
+\begin{exercise}[Powers count multiple times]
+A resistor's dissipation is computed as $P=V^2/R$ from
+$V=(10.0\pm0.2)\,\unit{\volt}$ and $R=(50\pm0.5)\,\unit{\ohm}$.
+(a) Find $P$, $\Delta P$ and $\varepsilon_P$.
+(b) Which measurement should you improve first, and why?
+\end{exercise}
+\begin{solution}
+(a) $V^2$ is a product of $V$ with itself, so $\varepsilon_V$ counts
+\emph{twice}: $\varepsilon_P=2\varepsilon_V+\varepsilon_R
+=2\cdot\qty{2}{\percent}+\qty{1}{\percent}=\qty{5}{\percent}$. With
+$P_0=100/50=\qty{2.00}{\watt}$ this gives $P=(2.00\pm0.10)\,\unit{\watt}$.
+(b) The voltage: a power $y=x^n$ multiplies the relative uncertainty by $n$,
+so the \qty{2}{\percent} of $V$ contributes \qty{4}{\percent} of the
+\qty{5}{\percent} total, while $R$ contributes only \qty{1}{\percent}.
+\end{solution}
+
+%=======================================================================
+\chapter{The analog oscilloscope}\label{ch:analog}
+%=======================================================================
+
+In a CRT scope an electron beam is deflected horizontally by $V_x$ and vertically
+by $V_y$ through the deflection coefficients $K_x,K_y$ (in V/div): the spot moves
+$x_{ndiv}=V_x/K_x$ and $y_{ndiv}=V_y/K_y$ divisions. The horizontal axis is
+normally driven by an internal sawtooth \emph{time base}.
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[scale=1,font=\footnotesize,>={Latex[length=2mm]}]
+  \fill[black!70] (-3.4,0) -- (-3.0,0.3) -- (-3.0,-0.3) -- cycle; % gun
+  \node[left] at (-3.4,0){gun};
+  \draw[thick] (-3.0,0) -- (2.0,0);                              % beam
+  \draw[thick] (-1.6,0.5)--(-0.6,0.5) (-1.6,-0.5)--(-0.6,-0.5);  % Y plates
+  \node[above] at (-1.1,0.5){$V_y\;(K_y)$};
+  \draw[thick] (0.2,0.7)--(0.2,0.2) (1.0,0.7)--(1.0,0.2);        % X plates
+  \node[above] at (0.6,0.7){$V_x\;(K_x)$};
+  \draw[thick,fill=accent!10] (2.0,-1.1) rectangle (2.4,1.1);    % screen
+  \node[right] at (2.4,0){screen};
+\end{tikzpicture}
+\caption{Cathode-ray tube: $V_y$ and $V_x$ deflect the beam vertically and
+horizontally; $x_{ndiv}=V_x/K_x$, $y_{ndiv}=V_y/K_y$.}
+\label{fig:crt}
+\end{figure}
+
+\section{Placing the beam and reading a trace}
+\begin{protocol}[Place the spot / interpret a trace]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Static spot}: $x_{ndiv}=V_x/K_x$, $y_{ndiv}=V_y/K_y$ from the
+        screen centre.
+  \item \textbf{Time-varying} $V_x,V_y$: the spot traces a path; persistence and
+        the eye merge it into a line above $\sim\qty{50}{\hertz}$.
+  \item \textbf{Stable image} needs (i) a periodic vertical signal and (ii) a
+        time base \emph{synchronised} by the trigger (level + edge), so each sweep
+        redraws the same picture.
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[Time base + sinusoid (Example 9)]
+Time base: sawtooth, $K_x=\qty{1}{\volt\per\division}$, $N_{xdiv}=10$, so amplitude
+$A=K_x N_{xdiv}/2=\qty{5}{\volt}$, period $T=\qty{100}{\milli\second}$. Each
+horizontal division is $K_T=T/N_{xdiv}=\qty{10}{\milli\second\per\division}$. A sinusoid on
+$V_y$ with $T_S=\qty{50}{\milli\second}$ shows $T/T_S=2$ full periods, and because
+the time base period is an integer multiple of $T_S$ the picture is \emph{stable}.
+Halving the scale (raise the time-base frequency to \qty{200}{\hertz}) shows one
+period.
+\end{wexample}
+
+\begin{exercise}
+Sketch the spot for (a) $V_x=\qty{-2}{\volt},V_y=\qty{1.5}{\volt}$ with
+$K_x=\qty{0.5}{},K_y=\qty{1}{\volt\per\division}$; (b) a square-wave $V_y$ between 0 and
+\qty{1}{\volt}, $K_y=\qty{0.5}{\volt\per\division}$, $V_x=0$. (c) Why does a time base
+period that is \emph{not} an integer multiple of $T_S$ give an unstable image
+(Example 10)?
+\end{exercise}
+\begin{solution}
+(a) $x=-2/0.5=-4$ div, $y=1.5/1=1.5$ div: top-left quadrant. (b) The spot
+alternates between centre and 2 div up; above $\sim\qty{50}{\hertz}$ both appear at
+once. (c) Each sweep starts at a different phase of $V_y$, so successive traces
+land in different places and the image drifts --- fixed by a trigger or
+single-shot capture.
+\end{solution}
+
+\section{Choosing the scales}
+\begin{protocol}[Pick vertical and horizontal scales]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Vertical} (8 divisions): choose the smallest standard
+        (1--2--5 sequence) $K_y\ge(V_{max}-V_{min})/8$ --- fills the screen,
+        minimising reading error.
+  \item \textbf{Horizontal} (12 divisions): to show $N$ periods choose the
+        smallest standard $K_x\ge NT/12$.
+  \item Set the trigger level inside the signal range, on the steeper edge.
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[Scale selection]
+A signal $V_{max}=\qty{3}{\volt}$, $V_{min}=\qty{-3}{\volt}$:
+$(V_{max}-V_{min})/8=6/8=\qty{0.75}{\volt\per\division}$, so choose $\qty{1}{\volt\per\division}$
+(signal fills 6 of 8 divisions). To show $N=4$ periods of a
+\qty{15}{\kilo\hertz} signal ($T=\qty{66.7}{\micro\second}$):
+$NT/12=\qty{22.2}{\micro\second\per\division}$, so choose $\qty{50}{\micro\second\per\division}$.
+\end{wexample}
+
+\begin{exercise}[Scale selection]
+A signal swings between $V_{min}=\qty{-0.2}{\volt}$ and
+$V_{max}=\qty{1.0}{\volt}$ at $f=\qty{2}{\kilo\hertz}$, and you want at least
+$N=3$ periods on screen. (a) Pick the vertical scale. (b) Pick the horizontal
+scale and count the periods actually displayed. (c) What goes wrong with
+$\qty{100}{\micro\second\per\division}$?
+\end{exercise}
+\begin{solution}
+(a) $(V_{max}-V_{min})/8=1.2/8=\qty{0.15}{\volt\per\division}$: the next standard value
+up is $\qty{0.2}{\volt\per\division}$ (the signal then spans 6 of 8 divisions).
+(b) $T=1/f=\qty{500}{\micro\second}$, so $NT/12=\qty{125}{\micro\second\per\division}$:
+choose $\qty{200}{\micro\second\per\division}$. The screen spans
+$12\times200=\qty{2.4}{\milli\second}$, i.e.\ $2.4/0.5=4.8$ periods.
+(c) The screen would span only $\qty{1.2}{\milli\second}=2.4$ periods, fewer than
+the 3 requested --- $\qty{100}{\micro\second\per\division}$ is \emph{below} the
+$NT/12$ minimum, not above it.
+\end{solution}
+
+\section{Reading uncertainty}
+A reading is a product, $V=K\cdot L$ (scale times divisions), so its relative
+uncertainty is the \emph{sum} of the scale's calibration error and the reading
+error (Protocol of Chapter~\ref{ch:uncert}).
+
+\begin{protocol}[Uncertainty of a scope reading]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Express the reading as $V=K\cdot L$: scale ($\unit{\volt\per\division}$ or
+        $\unit{\second\per\division}$) times length on screen (divisions).
+  \item Take the scale's calibration error $\varepsilon_K$ from the datasheet
+        (typically 1--3\,\%).
+  \item Estimate the reading resolution $\delta L$ (typically
+        0.1--0.2\,div, set by the graticule and trace thickness); then
+        $\varepsilon_L=\delta L/L$.
+  \item Add them: $\varepsilon_V=\varepsilon_K+\varepsilon_L$; report
+        $V\pm\varepsilon_V V$.
+\end{enumerate}
+\end{protocol}
+
+\begin{keyidea}
+$\delta L$ is roughly \emph{constant}, so the reading error
+$\varepsilon_L=\delta L/L$ shrinks as the trace gets bigger: \textbf{fill the
+screen}. The same trick works in time --- measure the length of \emph{several}
+periods and divide.
+\end{keyidea}
+
+\begin{wexample}[Peak-to-peak voltage]
+$K_y=\qty{0.5}{\volt\per\division}$ with $\varepsilon_{K_y}=\qty{2}{\percent}$; the trace
+spans $L=\qty{4}{\division}$ read to $\delta L=\qty{0.2}{\division}$
+($\varepsilon_L=0.2/4=\qty{5}{\percent}$). Then $V_{pp}=K_yL=\qty{2}{\volt}$,
+$\varepsilon_{V_{pp}}=\varepsilon_{K_y}+\varepsilon_L=\qty{7}{\percent}$,
+$\delta V_{pp}=\qty{0.14}{\volt}$: $V_{pp}=\qty{2.00(14)}{\volt}$.
+\end{wexample}
+
+\begin{exercise}[Period and frequency]
+With $K_T=\qty{10}{\micro\second\per\division}$
+($\varepsilon_{K_T}=\qty{2}{\percent}$) one period of a signal spans
+$L=(5.0\pm0.1)\,\unit{\division}$. (a) Find $T$ and $f=1/T$ with their
+uncertainties. (b) On $\qty{20}{\micro\second\per\division}$, four periods span
+$(10.0\pm0.1)\,\unit{\division}$ --- redo the estimate and explain the
+improvement.
+\end{exercise}
+\begin{solution}
+(a) $T=K_TL=\qty{50}{\micro\second}$,
+$\varepsilon_T=\varepsilon_{K_T}+\varepsilon_L=\qty{2}{\percent}+0.1/5.0
+=\qty{4}{\percent}$, so $T=(50\pm2)\,\unit{\micro\second}$. The ratio rule gives
+$\varepsilon_f=\varepsilon_T$ (the numerator 1 is exact):
+$f=(20.0\pm0.8)\,\unit{\kilo\hertz}$.
+(b) $T=K_TL/4=\qty{50}{\micro\second}$ again, but
+$\varepsilon_L=0.1/10=\qty{1}{\percent}$ so
+$\varepsilon_T=\qty{3}{\percent}$. Same $\delta L$, longer $L$: spreading the
+measurement over several periods divides the reading error by the period count.
+\end{solution}
+
+%=======================================================================
+\chapter{The digital oscilloscope}\label{ch:dso}
+%=======================================================================
+
+A Digital Sampling Oscilloscope samples the input with an ADC ($N$ bits $\to$
+$\pm0.5$ LSB quantisation) and reconstructs the trace from the samples. Two
+limits dominate: \emph{aliasing} (sample too slowly) and the instrument's own
+\emph{bandwidth} (which slows fast edges).
+
+\section{Sampling, Nyquist and aliasing}
+\begin{protocol}[Avoid aliasing; reconstruct cleanly]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Nyquist}: sample at $f_S>2f_B$ ($f_B$ = highest signal
+        frequency); otherwise the trace aliases to a \emph{wrong} signal with no
+        warning.
+  \item \textbf{Points per period} for a faithful look: $\sim$20--25 with no
+        interpolator, $\sim$10 with a linear one, 3--4 with a (sinc) one.
+  \item \textbf{Rule of thumb}: sample at $\ge10\times$ the signal frequency.
+\end{enumerate}
+\end{protocol}
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}
+\begin{axis}[width=11cm,height=4.2cm,xlabel={$t$},ylabel={$v$},
+  xtick=\empty,ytick=\empty,xmin=0,xmax=10,ymin=-1.4,ymax=1.4,
+  legend style={font=\footnotesize,at={(0.99,1.25)},anchor=north east},
+  every axis plot/.append style={thick}]
+\addplot[accent,domain=0:10,samples=200] {sin(deg(2*pi*x/2.5))};
+\addlegendentry{signal}
+\addplot[only marks,accent2,mark=*,mark size=1.4pt,domain=0:10,samples=11] {sin(deg(2*pi*x/2.5))};
+\addlegendentry{samples}
+\end{axis}
+\end{tikzpicture}
+\caption{Sampling a sinusoid: enough samples per period let an interpolator
+recover the waveform; too few and the displayed trace is wrong (aliased).}
+\label{fig:sampling}
+\end{figure}
+
+\begin{keyidea}
+A sine above the Nyquist limit does not vanish --- it \textbf{folds back}: the
+samples of a sine at $f_{in}$ are identical to those of a sine at
+\[
+  f_a=\bigl|f_{in}-k f_S\bigr|,\qquad k\ \text{the integer that puts}\ f_a\
+  \text{in}\ [0,f_S/2].
+\]
+The interpolator then draws a perfectly clean, perfectly \emph{wrong} sine ---
+with no clue of an error.
+\end{keyidea}
+
+\begin{wexample}[Predicting the aliased trace]
+A DSO samples at $f_S=\qty{1}{\mega\sps}$ and the input is a sine at
+$f_{in}=\qty{800}{\kilo\hertz}$. Nyquist would need
+$f_S>2f_{in}=\qty{1.6}{\mega\sps}$ --- violated. With $k=1$,
+$f_a=|800-1000|=\qty{200}{\kilo\hertz}$: the screen shows a clean
+\qty{200}{\kilo\hertz} sine of the \emph{correct amplitude}, so nothing looks
+broken. To display the real \qty{800}{\kilo\hertz} signal acceptably with the
+default linear interpolator ($\sim$10 points per period) you need
+$f_S\approx10f_{in}=\qty{8}{\mega\sps}$.
+\end{wexample}
+
+\begin{exercise}[Alias frequencies]
+A DSO samples at $f_S=\qty{50}{\mega\sps}$. (a) What does it display for a
+\qty{49}{\mega\hertz} sine? (b) And for a \qty{51}{\mega\hertz} sine --- can you
+tell the two inputs apart? (c) What minimum $f_S$ would you pick to view a
+\qty{2}{\mega\hertz} sine with a linear interpolator?
+\end{exercise}
+\begin{solution}
+(a) $k=1$: $f_a=|49-50|=\qty{1}{\mega\hertz}$ --- a clean, stable, wrong trace.
+(b) Also $f_a=|51-50|=\qty{1}{\mega\hertz}$: the two inputs produce
+\emph{identical} samples, so they cannot be distinguished --- aliasing destroys
+information. (c) Rule of thumb, 10 points per period:
+$f_S\ge10\times2=\qty{20}{\mega\sps}$. (The theoretical Nyquist minimum
+$\qty{4}{\mega\sps}$ is lossless only with the unfeasible ideal sinc
+interpolator.)
+\end{solution}
+
+\section{Probe loading and bandwidth}
+The scope input ($R_i\approx\qty{1}{\mega\ohm}$ in parallel with $C_i$) plus cable
+capacitance forms a low-pass that loads the source. A $\times10$
+\textbf{compensated probe} ($R_sC_s=R_iC_p$) attenuates by 10 but multiplies the
+bandwidth by 10 (Appendix~\ref{app:probe}). The bandwidth $B$ itself slows a step:
+the displayed rise time is $T_B=0.35/B$, and a real edge $T_{Rise}$ combines as
+$T_{meas}=\sqrt{T_B^2+T_{Rise}^2}$.
+
+\begin{figure}[h]\centering
+\begin{tabular}{cc}
+% scope input model
+\begin{circuitikz}[scale=0.8,transform shape]
+  \draw (0,0) node[ground]{} to[V=$V_g$] (0,2.4) to[R=$R_g$] (2,2.4) coordinate(a);
+  \draw (a) to[C=$C_c$] (a|-0,0) node[ground]{};
+  \draw (a) -- (3.0,2.4) coordinate(b) node[above]{$V_i$};
+  \draw (b) to[R=$R_i$] (b|-0,0) node[ground]{};
+  \draw (b) -- (4.0,2.4) coordinate(c);
+  \draw (c) to[C=$C_i$] (c|-0,0) node[ground]{};
+\end{circuitikz}
+&
+% compensated probe
+\begin{circuitikz}[scale=0.8,transform shape]
+  \draw (0,0) node[ground]{} to[V=$V_g$] (0,2.4) to[R=$R_g$] (1.6,2.4) coordinate(a);
+  \draw (a) to[R=$R_s$] (3.4,2.4) coordinate(b);
+  \draw (a) -- (a|-0,3.3) coordinate(a3);
+  \draw (a3) to[C=$C_s$] (b|-a3) coordinate(b3);
+  \draw (b3) -- (b);
+  \draw (b) -- (4.2,2.4) coordinate(d) node[above]{$V_i$};
+  \draw (d) to[R=$R_i$] (d|-0,0) node[ground]{};
+  \draw (d) -- (5.2,2.4) coordinate(e);
+  \draw (e) to[C=$C_p$] (e|-0,0) node[ground]{};
+\end{circuitikz}
+\\[2pt]
+{\footnotesize (a) Input loading model} & {\footnotesize (b) $\times10$ compensated probe}
+\end{tabular}
+\caption{Cable + input capacitance load the source (a); a compensated probe with
+$R_sC_s=R_iC_p$ flattens the response and raises the usable bandwidth (b).}
+\label{fig:probe}
+\end{figure}
+
+\begin{protocol}[Rise time and its uncertainty]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Scope rise time $T_B=0.35/B$.
+  \item Measured rise time $T_{meas}=N_{div}K_x$ (propagate
+        $\varepsilon_{T_{meas}}=\varepsilon_{N_{div}}+\varepsilon_{K_x}$).
+  \item True edge $T_{Rise}=\sqrt{T_{meas}^2-T_B^2}$; propagate to get
+        $\varepsilon_{T_{Rise}}$.
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[Rise-time measurement (Example 1)]
+$B=\qty{100}{\mega\hertz}\pm\qty{10}{\percent}\Rightarrow T_B=0.35/B=\qty{3.5}{\nano\second}$.
+Set $K_x=\qty{10}{\nano\second\per\division}$ ($\varepsilon_{K_x}=\qty{2}{\percent}$); read
+$N_{div}=(4.5\pm0.2)\,\unit{\division}$ ($\varepsilon_{N_{div}}=\qty{4.4}{\percent}$), so
+$T_{meas}=\qty{45}{\nano\second}$, $\varepsilon_{T_{meas}}=\qty{6.4}{\percent}$.
+Then $T_{Rise}=\sqrt{45^2-3.5^2}=\qty{44.9}{\nano\second}$, and propagating gives
+$\varepsilon_{T_{Rise}}\approx\qty{6.5}{\percent}$.
+\end{wexample}
+
+\begin{exercise}
+Repeat with $K_x=\qty{1}{\nano\second\per\division}$, same $N_{div}$ in divisions
+(so $T_{meas}=\qty{4.5}{\nano\second}$). Find $T_{Rise}$ and comment on the
+uncertainty.
+\end{exercise}
+\begin{solution}
+$T_{Rise}=\sqrt{4.5^2-3.5^2}=\sqrt{8}=\qty{2.83}{\nano\second}$, but now $T_B$ and
+$T_{meas}$ are close, so the subtraction under the root is a near-cancellation:
+$\varepsilon_{T_{Rise}}\approx\qty{32}{\percent}$. Measuring an edge near the
+scope's own limit is inaccurate --- use a faster scope.
+\end{solution}
+
+%=======================================================================
+\chapter{The digital multimeter}\label{ch:dmm}
+%=======================================================================
+
+\section{Loading error and 2- vs 4-wire resistance}
+Connecting a meter changes the circuit. For voltage, the finite input resistance
+$R_i$ forms a divider with the source resistance $R_g$:
+$V_m=V_g\frac{R_i}{R_i+R_g}$ (keep $R_i\gg R_g$). For resistance, the meter forces
+a known current and reads the voltage; in \emph{2-wire} mode the lead resistance
+$R_c$ adds ($R_{meas}=R_x+2R_c$), while \emph{4-wire} (Kelvin) sensing carries no
+current in the sense leads, so it cancels.
+
+\begin{protocol}[Resistance measurement: choose 2- or 4-wire]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Meter forces $I_S$, reads $V_{meas}$, reports $R=V_{meas}/I_S$.
+  \item \textbf{2-wire}: $R_{meas}=R_x+2R_c$ --- error grows for small $R_x$.
+  \item \textbf{4-wire}: sense leads draw no current, so their $R_c$ drops no
+        voltage; use it whenever $R_x$ is small (down to $\Omega$ and below).
+\end{enumerate}
+\end{protocol}
+
+\begin{figure}[h]\centering
+\begin{tabular}{cc}
+% 2-wire
+\begin{circuitikz}[scale=0.8,transform shape]
+  \draw (-1.2,2.2) to[I=$I_S$] (-1.2,0);
+  \draw (-1.2,2.2) -- (0,2.2) node[above right]{HI};
+  \draw (-1.2,0) -- (0,0) node[below right]{LO};
+  \draw (0,2.2) to[R=$R_c$] (1.6,2.2) coordinate(t);
+  \draw (t) to[R=$R_x$] (t|-0,0) coordinate(bb);
+  \draw (0,0) to[R=$R_c$] (bb);
+\end{circuitikz}
+&
+% 4-wire
+\begin{circuitikz}[scale=0.8,transform shape]
+  \draw (-1.2,2.6) to[I=$I_S$] (-1.2,-0.4);
+  \draw (-1.2,2.6) -- (0,2.6) node[above]{F\,HI};
+  \draw (-1.2,-0.4) -- (0,-0.4) node[below]{F\,LO};
+  \draw (0,2.6) to[R=$R_{c1}$] (2.0,2.6) coordinate(t);
+  \draw (t) to[R=$R_x$] (t|-0,-0.4) coordinate(bb);
+  \draw (0,-0.4) to[R=$R_{c1}$] (bb);
+  % sense leads (no current) tapped right at Rx
+  \draw (t) -- (2.8,2.6) node[right]{S\,HI};
+  \draw (bb) -- (2.8,-0.4) node[right]{S\,LO};
+\end{circuitikz}
+\\[2pt]
+{\footnotesize (a) 2-wire: reads $R_x+2R_c$} & {\footnotesize (b) 4-wire: reads $R_x$}
+\end{tabular}
+\caption{Resistance measurement. In 4-wire sensing the voltage is tapped right at
+$R_x$ by leads that carry no current, so the lead resistances $R_{c1}$ drop no
+voltage.}
+\label{fig:wire}
+\end{figure}
+
+\begin{wexample}[How big is the 2-wire error?]
+Measure $R_x\approx\qty{1}{\ohm}$ with ordinary leads,
+$R_c=\qty{0.1}{\ohm}$ each. The meter injects $I_S=\qty{100}{\milli\ampere}$
+(chosen so the drop is a few hundred \unit{\milli\volt}).
+\emph{2-wire}: $V_{meas}=I_S(R_x+2R_c)=0.1\times1.2=\qty{120}{\milli\volt}$, so
+it reports $R_{meas}=\qty{1.20}{\ohm}$ --- a $+\qty{20}{\percent}$ error.
+\emph{4-wire}: the sense leads carry no current, so
+$V_{meas}=I_SR_x=\qty{100}{\milli\volt}$ and the meter reports
+$\qty{1.00}{\ohm}$ exactly, with the same leads.
+\end{wexample}
+
+\begin{exercise}[When do you need 4 wires?]
+Same leads ($R_c=\qty{0.1}{\ohm}$ each). (a) What is the 2-wire error for
+$R_x=\qty{100}{\ohm}$? (b) Below which $R_x$ does the 2-wire error exceed
+\qty{1}{\percent}? (c) The sense leads have resistance too --- why doesn't it
+matter?
+\end{exercise}
+\begin{solution}
+(a) $R_{meas}=R_x+2R_c=\qty{100.2}{\ohm}$: error $0.2/100=\qty{0.2}{\percent}$
+--- 2-wire is fine for large $R_x$. (b) Error $=2R_c/R_x>\qty{1}{\percent}
+\Leftrightarrow R_x<200R_c=\qty{20}{\ohm}$. (c) The sense inputs go to a
+high-impedance amplifier, so the sense current is negligible: no current through
+the sense-lead resistance means no voltage drop across it.
+\end{solution}
+
+\section{AC measurements (RMS)}
+For AC the meter reports the RMS value. A \emph{true-RMS} meter integrates
+$v^2$ directly; cheaper meters measure the peak or rectified average and
+\emph{assume a sine}, applying a fixed multiplier --- so they read wrongly for
+non-sinusoids. For a sine, $V_{RMS}=0.707\,V_p=1.11\,V_{avg}$. If the signal has a
+DC component, $V_{RMS}=\sqrt{V_{RMS,AC}^2+V_{DC}^2}$.
+
+\begin{protocol}[Get the true RMS from a meter reading]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Identify the waveform and what the meter senses (true-RMS, peak, or
+        average).
+  \item For a sine: $V_{RMS}=V_p/\sqrt2$; $V_{avg}=2V_p/\pi$;
+        $V_{RMS}=\frac{\pi}{2\sqrt2}V_{avg}\approx1.11\,V_{avg}$.
+  \item Non-zero average: combine quadratically,
+        $V_{RMS}=\sqrt{V_{RMS,AC}^2+V_{DC}^2}$.
+  \item For a non-sine on a sine-calibrated meter, undo its multiplier and apply
+        the correct one.
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[Sine plus offset]
+$v(t)=1.5\sin\omega t+2$ (V): an all-positive sine, offset \qty{2}{\volt}. The AC
+part is $V_{RMS,AC}=1.5/\sqrt2=\qty{1.06}{\volt}$ and $V_{DC}=\qty{2}{\volt}$, so
+$V_{RMS}=\sqrt{1.06^2+2^2}=\sqrt{5.125}=\qty{2.26}{\volt}$. A meter measuring only
+the AC-coupled part reads \qty{1.06}{\volt}; you then add the DC quadratically.
+\end{wexample}
+
+\begin{exercise}
+A meter that senses the \emph{average} (sine-calibrated, $\times1.11$) is given a
+\qty{10}{\volt} peak \emph{square} wave. What does it display, and what is the true
+RMS?
+\end{exercise}
+\begin{solution}
+For a square wave $V_{avg}=V_p=\qty{10}{\volt}$, so the meter shows
+$1.11\times10=\qty{11.1}{\volt}$ --- wrong. The true RMS of a square wave is
+$V_{RMS}=V_p=\qty{10}{\volt}$. (A true-RMS meter would read \qty{10}{\volt}.)
+\end{solution}
+
+%=======================================================================
+\chapter{Laboratory: Bench measurements}\label{ch:lab-meas}
+%=======================================================================
+
+This lab puts Chapters~\ref{ch:analog}--\ref{ch:dmm} to work on a real bench: a
+Rigol DS1054 digital storage oscilloscope (DSO) observing signals generated by a
+signal-generator board. The point is not the individual numbers but the \emph{method} ---
+calibrate, choose scales, read both with the instrument's engine and by eye, and
+attach an uncertainty to everything.
+
+\begin{keyidea}
+Every reading here is taken \emph{twice}: once from the DSO's automatic
+measurement engine (uncertainty from the datasheet) and once by \emph{visual}
+inspection in divisions (uncertainty $\approx\qty{0.1}{\division}$). Agreement
+between the two is the cross-check that the measurement is sound.
+\end{keyidea}
+
+\section{Setup and probe calibration}
+
+What is happening: a $\times 10$ probe forms an $RC$ network with the scope input,
+so it must be \emph{compensated} or fast edges are distorted
+(Appendix~\ref{app:probe}). The scope provides a \qty{1}{\kilo\hertz},
+\qty{3}{\volt} square reference for exactly this.
+
+\begin{protocol}[Calibrate the bench before measuring]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Connect each probe to the \code{PROBE COMP} terminal; select a timebase
+        around \qty{200}{\micro\second\per\division}.
+  \item Turn the trimmer on the BNC until the square wave has flat tops --- no
+        overshoot (over-compensated) and no rounded droop (under-compensated).
+  \item Switch the display to \emph{dots} (single samples, minimum persistence)
+        so individual acquisition points are visible --- needed for the next
+        section.
+\end{enumerate}
+\end{protocol}
+
+\section{Measuring the sampling rate}
+
+A budget DSO has \emph{one} ADC time-division-multiplexed across the active
+channels. With the display in dots mode you count how many samples fall across a
+known time window and back out the sample period
+\[
+T_s=\frac{(\text{timebase})\times(\#\,\text{divisions})}{\#\,\text{dots}},
+\qquad \Delta T_s=\frac{T_s}{\#\,\text{dots}},
+\]
+and the sample rate $f_s=1/T_s$ carries the \emph{same relative} uncertainty.
+
+\begin{wexample}[The sample rate halves with each channel]
+On CH1 alone, $60$ dots span $12$ divisions at \qty{5}{\nano\second\per\division}:
+$T_s=(5\times12)/60=\qty{1}{\nano\second}$, i.e.\ $f_s=\qty{1}{\giga\sample\per
+\second}$. Enabling CH2 drops the count to $30$ dots ($f_s=\qty{500}{\mega\sample
+\per\second}$); a third channel halves it again to \qty{250}{\mega\sample\per
+\second}. One ADC, shared in turns --- the rate divides as channels are added.
+\end{wexample}
+
+\section{Analog waveform characterisation}
+
+For each generated waveform (sine, triangle, square)
+the protocol is the same.
+
+\begin{protocol}[Characterise a periodic waveform]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Trigger a stable trace; set vertical and horizontal scales so the wave
+        fills most of the screen (best resolution, \S\ref{sec:approach}).
+  \item Read $V_{pp}$, $V_{min}$, $V_{max}$, frequency, period, average and
+        $V_{RMS}$ from the engine; record the datasheet uncertainty for each.
+  \item Re-read the same quantities \emph{by eye} in divisions $\times$ scale;
+        the reading uncertainty is about \qty{0.1}{\division}.
+  \item For the square wave additionally read rise and fall times
+        ($t_{rise}$, $t_{fall}$) on a fast timebase
+        (Appendix~\ref{app:rise}).
+  \item Compare engine vs visual: they should agree within their uncertainties.
+\end{enumerate}
+\end{protocol}
+
+A representative engine reading for the sinusoid:
+
+\begin{table}[h]\centering\small
+\caption{Sinusoid, DSO engine (datasheet uncertainty).}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Quantity & Value & $\Delta$ & $\varepsilon$\\
+\midrule
+$V_{pp}$   & \qty{1.14}{\volt}   & \qty{0.048}{\volt}  & \qty{4.2}{\percent}\\
+$V_{max}$  & \qty{1.58}{\volt}   & \qty{0.080}{\volt}  & \qty{5.6}{\percent}\\
+Frequency  & \qty{7999}{\hertz}  & \qty{0.20}{\hertz}  & \qty{0.0025}{\percent}\\
+$V_{RMS}$  & \qty{1.07}{\volt}   & \qty{0.080}{\volt}  & \qty{7.5}{\percent}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{note}
+The frequency is pinned down far better ($\varepsilon\sim\qty{e-3}{\percent}$,
+from the timebase) than the voltages ($\varepsilon\sim$ several \unit{\percent},
+from the gain accuracy). Time is the scope's strong suit; amplitude is not.
+\end{note}
+
+\section{Digital signal characterisation}
+
+For the digital outputs (high- and low-frequency, switches~4 and~3) the extra
+quantities of interest are the \emph{duty cycle} (Duty$+$/Duty$-$) and the edge
+times. A high-frequency square near \qty{2.35}{\mega\hertz} shows a short
+$t_{rise}\approx t_{fall}\approx\qty{20}{\nano\second}$; the low-frequency one
+($\sim\qty{24}{\hertz}$, $\approx 50\%$ duty) shows much longer periods but
+comparable edges.
+
+\begin{warning}
+At high frequency the probe and scope bandwidth limit the edges you can
+\emph{see}: a measured $t_{rise}$ near the scope's own rise time
+($t_{rise}^{scope}=0.35/\mathrm{BW}$, Appendix~\ref{app:rise}) is the
+\emph{instrument}, not the signal. Always check the edge against the scope's
+bandwidth before trusting it.
+\end{warning}
+
+%=======================================================================
+\appendix
+%=======================================================================
+\chapter{Uncertainty propagation}\label{app:prop}
+For $y=f(x_1,\dots,x_n)$ a first-order Taylor expansion about the measured point
+gives $\Delta y=\sum_i\bigl|\partial f/\partial x_i\bigr|\,\Delta x_i$. Hence:
+sum/difference $y=a\pm b\Rightarrow\Delta y=\Delta a+\Delta b$ (absolute add);
+product/ratio $y=ab$ or $a/b\Rightarrow\varepsilon_y=\varepsilon_a+\varepsilon_b$
+(relative add). A difference of nearly equal numbers has a small $y_0$ but a
+$\Delta y$ of the same size as for a sum, so $\varepsilon_y=\Delta y/y_0$ becomes
+large --- the cancellation seen in Chapter~\ref{ch:uncert}.
+
+\chapter{Oscilloscope formulas}\label{app:scope}
+Deflection: $x_{ndiv}=V_x/K_x$, $y_{ndiv}=V_y/K_y$. Time base:
+$A=K_xN_{xdiv}/2$, $K_T=T/N_{xdiv}$. Scale choice: vertical
+$K_y\ge(V_{max}-V_{min})/8$, horizontal $K_x\ge NT/12$ (1--2--5 sequence).
+Reading: $V=KL$, $\varepsilon_V=\varepsilon_K+\varepsilon_L$.
+
+\section{The compensated probe}\label{app:probe}
+With $C_p=C_i+C_c$ the uncompensated input has a pole at
+$f_t=1/(2\pi R_g C_p)$. Adding a probe $R_s\Vert C_s$ with $R_s=9R_i$,
+$C_s=C_p/9$ (so $R_sC_s=R_iC_p$) makes a frequency-independent divider of $1/10$
+and pushes the pole to $10f_t$ --- ten times the bandwidth, at the cost of a
+$\times10$ attenuation.
+
+\chapter{Bandwidth and rise time}\label{app:rise}
+A single-pole bandwidth $B$ responds to a step as
+$v(t)=V_H(1-e^{-t/\tau})$ with $\tau=1/(2\pi B)$; the 10\%--90\% rise time is
+$T_B=\tau\ln 9=0.35/B$. A real edge $T_{Rise}$ and the scope combine as
+$T_{meas}^2=T_B^2+T_{Rise}^2$, so $T_{Rise}=\sqrt{T_{meas}^2-T_B^2}$; near
+$T_{meas}\approx T_B$ this subtraction is ill-conditioned (large
+$\varepsilon_{T_{Rise}}$).
+
+\chapter{RMS, average and peak factors}\label{app:rms}
+\begin{center}\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Waveform & $V_{RMS}$ & $V_{avg}$ (rectified) & note\\
+\midrule
+Sine $V_p\sin\omega t$ & $V_p/\sqrt2=0.707V_p$ & $2V_p/\pi=0.637V_p$ & $V_{RMS}=1.11V_{avg}$\\
+Square $\pm V_p$ & $V_p$ & $V_p$ & sine meter reads $1.11V_p$\\
+With DC & \multicolumn{3}{l}{$V_{RMS}=\sqrt{V_{RMS,AC}^2+V_{DC}^2}$}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\chapter{Example coverage map}\label{app:coverage}
+\begin{longtable}{@{}p{0.44\linewidth}p{0.32\linewidth}p{0.16\linewidth}@{}}
+\toprule
+\textbf{Example(s)} & \textbf{Protocol / method} & \textbf{Where}\\
+\midrule\endhead
+SI redefinition; 7 base units; traceability; direct vs indirect & Take \& trace a measurement (P\,1.1) & Ch.~\ref{ch:si}\\
+Sum/diff/product/ratio; ratio-2 ($1/(a-b)$); $R_{in}$ divider; powers ($V^2/R$) & Propagate uncertainty (P\,2.1) & Ch.~\ref{ch:uncert}\\
+Scope Examples 1--10 (spots, waves, time base) & Place spot / read trace (P\,3.1) & Ch.~\ref{ch:analog}\\
+Vertical/horizontal scale choice & Pick scales (P\,3.2) & Ch.~\ref{ch:analog}\\
+$V_{pp}$ uncertainty ($K_y,L$); period/frequency reading & Reading uncertainty (P\,3.3) & Ch.~\ref{ch:analog}\\
+Sampling, Nyquist, interpolators, aliasing; alias-frequency prediction & Avoid aliasing (P\,4.1) & Ch.~\ref{ch:dso}\\
+Compensated probe; rise time Ex1/Ex2 & Rise time (P\,4.2) & Ch.~\ref{ch:dso}\\
+DMM loading; 2-/4-wire resistance & 2-/4-wire (P\,5.1) & Ch.~\ref{ch:dmm}\\
+AC RMS, sine/square, $1.5\sin+2$ & True RMS (P\,5.2) & Ch.~\ref{ch:dmm}\\
+Probe compensation; sampling rate; analog/digital waveform reads & Calibrate / characterise (P\,6.1--6.2) & Ch.~\ref{ch:lab-meas}\\
+\bottomrule
+\end{longtable}
+
+\end{document}

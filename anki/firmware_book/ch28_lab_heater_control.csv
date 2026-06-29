@@ -1,0 +1,9 @@
+#separator:Semicolon
+#html:false
+What does the closed-loop heater lab add to the thermometer?;An actuator: the dispatcher fans the measured temperature out to two consumers — the display and a new heater task — and the heater task switches a resistive heating element on or off to hold a set-point.
+What is fan-out in the heater lab?;A single producer pushing the same reading to two consumer queues — one Get from the acquisition queue, then two Puts (display queue and control queue) — so both the display and the heater task receive the temperature.
+How is the heating element driven?;Through a load switch — the kind of low-side or high-side transistor stage covered in the load-switches chapter.
+What is bang-bang control with hysteresis?;The simplest closed loop: turn the heater on below (setpoint − h) and off above (setpoint + h). The dead-band h stops the output chattering when the temperature sits at the set-point.
+Why is hysteresis the whole trick in bang-bang control?;With a single threshold the heater would switch thousands of times a second as noise crosses the line. The ±h band trades a little temperature ripple for a sane switching rate.
+Is bang-bang the best controller, and what is next?;It is the floor, not the ceiling. When overshoot or ripple matters you move to proportional or PID control — but the task/queue plumbing built here is exactly what a PID loop would reuse.
+How does the lab make the heater state visible?;An LED (led0) mirrors the heater on/off state so you can see the control loop working.

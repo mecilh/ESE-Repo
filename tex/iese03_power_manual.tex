@@ -1,0 +1,1025 @@
+%=======================================================================
+%  IESE SOLVING MANUAL 3 -- POWER SUPPLIES
+%=======================================================================
+\documentclass[11pt,a4paper,oneside]{book}
+\usepackage{iese_manual}
+
+\hypersetup{pdftitle={IESE Manual 3 -- Power Supplies}}
+
+\begin{document}
+\frontmatter
+
+\begingroup
+\thispagestyle{empty}\centering
+\vspace*{2.2cm}
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[0.5cm]
+{\Huge\bfseries\color{accent} Power Supplies}\\[0.35cm]
+{\LARGE A Solving Manual}\\[0.4cm]
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[1.2cm]
+{\large IESE Manual 3 of 3}\\[1.6cm]
+{\footnotesize Typeset in \LaTeX{} with circuitikz and pgfplots.}
+\par\vspace*{\fill}
+\endgroup
+\clearpage
+
+\chapter*{How to use this manual}
+\addcontentsline{toc}{chapter}{How to use this manual}
+\markboth{How to use this manual}{How to use this manual}
+
+A power supply turns an available energy source (mains, battery, solar, dynamo)
+into the stable voltage a circuit needs. This manual is organised by the four
+building blocks the course studies --- the classical transformer supply, the
+power-factor problem, the linear regulator, and the switching regulator --- and
+for each \emph{type} of problem it gives a \textbf{Protocol} (a numbered
+recipe), one fully \textbf{Worked Example} (the canonical one),
+and \textbf{Exercises} with solutions. Theory sits at the point of use in one
+paragraph; the full derivation is in a cross-referenced \textbf{appendix}.
+
+\begin{keyidea}
+\textbf{Two numbers run through everything here.} \emph{Ripple} $\Delta V$ (how
+far the output sags between recharges) and \emph{efficiency}
+$\eta=P_{out}/P_{in}$ (how much input power reaches the load). Linear regulators
+give clean output but poor $\eta$; switching regulators give high $\eta$ at the
+cost of high-frequency ripple. Every design trades these off.
+\end{keyidea}
+
+\tableofcontents
+\clearpage
+\mainmatter
+
+%=======================================================================
+\chapter{Specifications: reading the data sheet}\label{ch:spec}
+%=======================================================================
+
+Before solving anything you must read the spec correctly. The recurring
+quantities are \emph{regulation} (how much the output moves) and its companion
+\emph{sensitivity}, plus \emph{ripple rejection} and \emph{efficiency}.
+
+\begin{protocol}[Extract regulation, sensitivity, ripple rejection]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Load regulation}: the output change $\Delta V_{out}$ for a stated
+        load-current change $\Delta I_{out}$. \emph{Load sensitivity}
+        $S_I=\Delta V_{out}/\Delta I_{out}$ --- an output resistance, in $\Omega$.
+  \item \textbf{Line regulation}: the output change $\Delta V_{out}$ for an input
+        change $\Delta V_{in}$. \emph{Line sensitivity}
+        $S_V=\Delta V_{out}/\Delta V_{in}$.
+  \item \textbf{Ripple rejection} in dB:
+        $20\log_{10}(\Delta V_{in}/\Delta V_{out})$.
+  \item \textbf{Efficiency} $\eta=P_{out}/P_{in}$; dissipated power
+        $P_d=P_{in}-P_{out}$ becomes heat (size the heat sink from it).
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[Reading a regulator's numbers]
+A regulator shows $\Delta V_{out}=\qty{7}{\milli\volt}$ for
+$\Delta V_{in}=\qtyrange{7.5}{25}{\volt}$ (i.e. $\Delta V_{in}=\qty{17.5}{\volt}$):
+ripple rejection $=20\log_{10}(17.5/0.007)=20\log_{10}(2500)=\qty{68}{\dB}$. For a
+load step $\Delta I_{out}\approx\qty{1.5}{\ampere}$ giving
+$\Delta V_{out}=\qty{30}{\milli\volt}$, the output resistance is
+$S_I=0.03/1.5=\qty{20}{\milli\ohm}$.
+\end{wexample}
+
+\begin{exercise}[A datasheet line by line]
+A \qty{5}{\volt} regulator's table reads: $\Delta V_{out}=\qty{10}{\milli\volt}$
+for $I_{out}$ from \qty{5}{\milli\ampere} to \qty{1.5}{\ampere};
+$\Delta V_{out}=\qty{3}{\milli\volt}$ for $V_{in}$ from \qtyrange{8}{12}{\volt}.
+(a) Load and line sensitivity, and the ripple rejection.
+(b) At $V_{in}=\qty{12}{\volt}$, $I_{out}=\qty{1}{\ampere}$: efficiency and
+dissipated power.
+\end{exercise}
+\begin{solution}
+(a) $S_I=0.010/1.495\approx\qty{6.7}{\milli\ohm}$;
+$S_V=0.003/4=\qty{0.75}{\milli\volt\per\volt}$; ripple rejection
+$=20\log_{10}(4/0.003)=\qty{62.5}{\dB}$.
+(b) $P_{out}=5\times1=\qty{5}{\watt}$, $P_{in}\approx12\times1=\qty{12}{\watt}$:
+$\eta=5/12=\qty{41.7}{\percent}$ and $P_d=\qty{7}{\watt}$ of heat --- the
+heat-sink question of Chapter~\ref{ch:linear}.
+\end{solution}
+
+\begin{warning}
+Static (DC) regulation figures are not the whole story: during a \emph{transient}
+load step the output can deviate by hundreds of mV --- far more than the
+\qtyrange{25}{30}{\milli\volt} static value. Always check the transient response,
+not just the steady-state table.
+\end{warning}
+
+%=======================================================================
+\chapter{The classical (transformer) power supply}\label{ch:classic}
+%=======================================================================
+
+The classical supply is a chain of blocks: mains, protection, EMC filter,
+transformer (step-down + isolation), rectifier (AC$\to$unipolar), capacitor
+filter (unipolar$\to$pseudo-DC), and a regulator. It gives a very clean output
+but poor efficiency and a pulsed input current.
+
+\begin{figure}[h]\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\footnotesize,
+  blk/.style={draw,rounded corners=1pt,minimum height=10mm,minimum width=14mm,
+              align=center,fill=accent!10},
+  >={Latex[length=2mm]}]
+  \node[blk](A){Wall\\socket};
+  \node[blk,right=4mm of A](B){Fuse +\\switch};
+  \node[blk,right=4mm of B](C){EMC\\filter};
+  \node[blk,right=4mm of C](D){Trans-\\former};
+  \node[blk,right=4mm of D](E){Recti-\\fier};
+  \node[blk,right=4mm of E](F){Filter\\$C$};
+  \node[blk,right=4mm of F](G){Voltage\\regulator};
+  \node[blk,right=4mm of G](H){Load};
+  \foreach \x/\y in {A/B,B/C,C/D,D/E,E/F,F/G,G/H} \draw[->] (\x)--(\y);
+\end{tikzpicture}}
+\caption{Block diagram of the classical power supply.
+$\qty{230}{\volt_{RMS}}@\qty{50}{\hertz}\to$ a clean low-voltage DC for the load.}
+\label{fig:psblock}
+\end{figure}
+
+\section{Transformer and rectifier}
+The transformer scales voltage by its turns ratio and isolates galvanically:
+$V_S/V_P=N_S/N_P$ and (ideally lossless) $V_PI_P=V_SI_S$. A \emph{full-wave}
+bridge rectifier inverts the negative half-cycles, so its output ripples at
+\emph{twice} the line frequency (period $T/2$); a half-wave rectifier passes only
+the positive halves (period $T$). Diodes drop \qtyrange{1}{2}{\volt}.
+
+The design runs \emph{backwards}, from the load to the wall: the regulator needs
+a minimum input (its output plus dropout), the ripple eats into that margin, the
+bridge eats two diode drops off the secondary peak, and the mains itself may sag
+\qty{10}{\percent} --- each stage adds its demand to the one before.
+
+\begin{protocol}[Size the transformer and rectifier]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Peak at the filter}: pick $V_{MAX}$ so the ripple valley clears
+        the regulator, $V_{MAX}-\Delta V\ge V_{out}+V_{DO,min}$ (plus margin).
+  \item \textbf{Secondary voltage}: the bridge drops two diodes, so the
+        secondary peak must be $V_{MAX}+2V_D$, i.e.
+        $V_{S,RMS}=(V_{MAX}+2V_D)/\sqrt2$.
+  \item \textbf{Worst-case mains}: the result must hold at mains
+        $-\qty{10}{\percent}$, so divide by $0.9$, then pick the next standard
+        secondary; turns ratio $N_P/N_S=V_{P,RMS}/V_{S,RMS}$.
+  \item \textbf{Rate the diodes}: reverse voltage $\ge V_{MAX}$ (with margin)
+        and repetitive peak current $\ge I_{peak}$ from the filter protocol
+        below.
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[Secondary for a \qty{5}{\volt}/\qty{100}{\milli\ampere} supply]
+Target: a 7805 ($V_{DO,min}=\qty{2}{\volt}$) fed through a bridge
+($V_D=\qty{1}{\volt}$) with ripple $\Delta V=\qty{0.9}{\volt}$ (next section).
+\emph{Step 1}: the valley must stay above $5+2=\qty{7}{\volt}$; choosing
+$V_{MAX}=\qty{9}{\volt}$ leaves a valley of $9-0.9=\qty{8.1}{\volt}$ ---
+\qty{1.1}{\volt} of margin. \emph{Step 2}: secondary peak $=9+2=\qty{11}{\volt}$,
+so $V_{S,RMS}=11/\sqrt2=\qty{7.8}{\volt}$. \emph{Step 3}: at mains
+$-\qty{10}{\percent}$ that becomes $7.8/0.9=\qty{8.6}{\volt}$ --- pick a standard
+\qty{9}{\volt_{RMS}} secondary, ratio $N_P/N_S=230/9\approx26$.
+\emph{Check} at nominal mains: peak $=9\sqrt2-2=\qty{10.7}{\volt}$, valley
+$\qty{9.8}{\volt}$ --- fine (the regulator absorbs the extra).
+\end{wexample}
+
+\begin{exercise}
+Size the secondary for \qty{12}{\volt}/\qty{0.5}{\ampere} from a 7812
+($V_{DO,min}=\qty{2}{\volt}$), bridge with $V_D=\qty{1}{\volt}$, ripple
+$\Delta V\le\qty{1}{\volt}$, mains $230\pm\qty{10}{\percent}$/\qty{50}{\hertz}.
+(a) The filter capacitor. (b) The secondary RMS voltage and ratio.
+(c) Why would a \emph{half-wave} rectifier double the capacitor?
+\end{exercise}
+\begin{solution}
+(a) Full-wave, $T_{dis}=T/2=\qty{10}{\milli\second}$:
+$C=I_{out}T_{dis}/\Delta V=0.5\times0.01/1=\qty{5}{\milli\farad}$.
+(b) Valley $\ge12+2=\qty{14}{\volt}\Rightarrow V_{MAX}=\qty{15}{\volt}$;
+secondary peak $=15+2=\qty{17}{\volt}$, $V_{S,RMS}=17/\sqrt2=\qty{12.0}{\volt}$;
+at $-\qty{10}{\percent}$: $12.0/0.9=\qty{13.4}{\volt}$ --- pick
+\qty{15}{\volt_{RMS}} (standard), ratio $\approx230/15=15.3$.
+(c) Half-wave discharges for the whole period $T$ instead of $T/2$: same
+$\Delta V$ needs twice the charge, hence
+$C=\qty{10}{\milli\farad}$.
+\end{solution}
+
+\begin{figure}[h]\centering
+\begin{circuitikz}[scale=1.05,transform shape]
+  % AC source (transformer secondary) on the left
+  \draw (0,0) to[sV=$v_s$] (0,3) coordinate(top);
+  % bridge diamond: AC corners left/right, DC + top, DC - bottom
+  \coordinate (aL) at (2.4,1.5);   % left  AC corner
+  \coordinate (aR) at (4.6,1.5);   % right AC corner
+  \coordinate (dp) at (3.5,2.9);   % DC +
+  \coordinate (dm) at (3.5,0.1);   % DC -
+  % all four diodes conduct toward dp (top) and away from dm (bottom)
+  \draw (aL) to[D=$D_1$] (dp);
+  \draw (aR) to[D=$D_2$] (dp);
+  \draw (dm) to[D=$D_3$] (aL);
+  \draw (dm) to[D=$D_4$] (aR);
+  \node[circ] at (aL){}; \node[circ] at (aR){};
+  \node[circ] at (dp){}; \node[circ] at (dm){};
+  % each source terminal feeds exactly one AC corner (never both -> no short)
+  \draw (top) -- (top -| aL) -- (aL);
+  \draw (0,0) -- (0,-1.0) -- (6.0,-1.0) -- (6.0,1.5) -- (aR);
+  % DC output: + rail (top) and - rail (bottom), filter cap, load
+  \draw (dp) -- (dp -| 7.0,0) coordinate(vp) node[above right]{$+$};
+  \draw (dm) -- (dm -| 7.0,0) coordinate(vm) node[below right]{$-$};
+  \draw (vp) to[C=$C$] (vp |- vm);
+  \draw (vp) ++(1.3,0) coordinate(lp) -- (vp);
+  \draw (lp) to[R=$R_L$] (lp |- vm);
+  \draw (vm) -- (lp |- vm);
+\end{circuitikz}
+\caption{Full-wave bridge rectifier with capacitor filter and load. The capacitor
+holds the peak and discharges into the load between peaks, leaving a residual
+ripple $\Delta V$.}
+\label{fig:bridge}
+\end{figure}
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{axis}[width=11cm,height=4.8cm,axis lines=none,clip=false,
+  xmin=-0.05,xmax=5.9,ymin=-5.1,ymax=1.3,
+  every axis plot/.append style={very thick}]
+% baselines for the three stacked traces
+\addplot[gray,dotted,domain=0:4]{0};
+\addplot[gray,dotted,domain=0:4]{-2.4};
+\addplot[gray,dotted,domain=0:4]{-4.0};
+% input sine, half-wave, full-wave (stacked)
+\addplot[black,samples=300,domain=0:4]{sin(deg(2*pi*x))};
+\addplot[accent,samples=300,domain=0:4]{max(0,sin(deg(2*pi*x)))-2.4};
+\addplot[accent2,samples=300,domain=0:4]{abs(sin(deg(2*pi*x)))-4.0};
+\node[anchor=west] at (axis cs:4.05,0){input $v_S$};
+\node[anchor=west] at (axis cs:4.05,-2.4){half-wave};
+\node[anchor=west] at (axis cs:4.05,-4.0){full-wave};
+\end{axis}
+\end{tikzpicture}
+\caption{Rectification. The half-wave output keeps only the positive half-cycles
+(ripple period $T$); the full-wave output flips the negative halves up, so it
+ripples at \emph{twice} the line frequency (period $T/2$). Real diodes also shave
+\qtyrange{1}{2}{\volt} off each peak.}
+\label{fig:rectwave}
+\end{figure}
+
+\section{Sizing the filter capacitor}
+The filter capacitor charges briefly near each peak and discharges (approximately
+linearly) into the load for the rest of the period. The ripple is
+$\Delta V=I_{out}\,T_{dis}/C$ with $T_{dis}=T/2$ (full-wave) or $T$ (half-wave).
+Charge balance fixes the peak input current. Derivation: Appendix~\ref{app:ripple}.
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{axis}[width=12cm,height=5.4cm,
+  xlabel={$t$ (ms)},ylabel={$v$ (V),\; $i$ (scaled)},
+  xmin=0,xmax=40,ymin=0,ymax=11,
+  xtick={5,15,25,35},xticklabels={},
+  ytick={9},yticklabels={$V_{MAX}$},
+  legend style={font=\footnotesize,at={(0.5,1.30)},anchor=north,legend columns=3},
+  every axis plot/.append style={very thick}]
+% rectified full-wave sine (dashed envelope)
+\addplot[red!70,dashed,samples=250,domain=0:40]{9*abs(sin(deg(pi*x/10)))};
+\addlegendentry{rectified $|v_S|$}
+% filter output: charge to the peak, then linear discharge
+\addplot[accent] coordinates
+  {(2.5,8.4)(5,9)(14,8.1)(15,9)(24,8.1)(25,9)(34,8.1)(35,9)(38,8.4)};
+\addlegendentry{filter output $v_{out}$}
+% pulsed input (charging) current
+\addplot[accent2!85!black] coordinates
+  {(0,0)(4.3,0)(5,5)(5.2,0)(14.3,0)(15,5)(15.2,0)(24.3,0)(25,5)(25.2,0)
+   (34.3,0)(35,5)(35.2,0)(40,0)};
+\addlegendentry{input current $i_{in}$}
+\addplot[black,dotted,domain=0:40]{9};
+% dimension markers
+\draw[<->] (axis cs:24,8.1) -- (axis cs:24,9) node[midway,right]{$\Delta V$};
+\draw[<->] (axis cs:15,9.8) -- (axis cs:25,9.8) node[midway,above=-1pt]{$T/2$};
+\draw[<->] (axis cs:14.3,0.7) -- (axis cs:15,0.7) node[midway,below=-1pt]{$t_c$};
+\end{axis}
+\end{tikzpicture}
+\caption{Filter action (full-wave). The capacitor charges in a brief pulse near
+each peak $V_{MAX}$, then discharges almost linearly into the load for the rest of
+the half-period, leaving the residual ripple $\Delta V$. The recharge is crammed
+into the short conduction time $t_c$, so the input current $i_{in}$ arrives as
+tall narrow spikes of height $I_{peak}$. For the worked example below
+($V_{MAX}=\qty{9}{\volt}$, $I_{out}=\qty{100}{\milli\ampere}$,
+$C=\qty{2.2}{\milli\farad}$): $\Delta V=\qty{0.9}{\volt}$,
+$t_c=\qty{1.44}{\milli\second}$, $I_{peak}=\qty{2.77}{\ampere}$. A larger $C$
+flattens $\Delta V$ but shortens $t_c$, pushing $I_{peak}$ \emph{up}.}
+\label{fig:ripple}
+\end{figure}
+
+\begin{protocol}[Filter ripple, conduction time and peak current]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Ripple}: $\Delta V=\dfrac{I_{out}}{C}\cdot T_{dis}$,
+        $T_{dis}=T/2$ (full-wave) or $T$ (half-wave).
+  \item \textbf{Conduction time}: from where the rising sine re-reaches
+        $V_{MAX}-\Delta V$, $\;t_c=\dfrac{T}{2\pi}\cos^{-1}\!\dfrac{V_{MAX}-\Delta V}{V_{MAX}}$.
+  \item \textbf{Peak charging current}: charge in $=$ charge out over a period,
+        $\tfrac12 t_c I_{peak}=I_{out}T\Rightarrow I_{peak}=\dfrac{2I_{out}T}{t_c}$.
+  \item \textbf{Trade-off}: larger $C\Rightarrow$ smaller $\Delta V$ but
+        \emph{larger} $I_{peak}$ (shorter $t_c$). Choose against both specs.
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[Full-wave filter, $C=\qty{2.2}{\milli\farad}$]
+$f=\qty{50}{\hertz}$ ($T=\qty{20}{\milli\second}$), $V_{MAX}=\qty{9}{\volt}$,
+$I_{out}=\qty{100}{\milli\ampere}$. Using $T_{dis}=T$, the
+ripple is $\Delta V=\dfrac{I_{out}\,T}{C}=\dfrac{0.1\cdot0.02}{2.2\times10^{-3}}
+=\qty{0.9}{\volt}$. Conduction time
+$t_c=\dfrac{0.02}{2\pi}\cos^{-1}\!\dfrac{9-0.9}{9}=\qty{1.44}{\milli\second}$;
+peak current $I_{peak}=\dfrac{2\cdot0.1\cdot0.02}{1.44\times10^{-3}}
+=\qty{2.77}{\ampere}$.
+\end{wexample}
+
+\begin{exercise}
+Repeat with $C'=\qty{4.7}{\milli\farad}$ (same $f,V_{MAX},I_{out}$). What happens
+to $\Delta V$ and to $I_{peak}$?
+\end{exercise}
+\begin{solution}
+$\Delta V'=\dfrac{0.1\cdot0.02}{4.7\times10^{-3}}=\qty{0.43}{\volt}$ (smaller);
+$t_c'=\dfrac{0.02}{2\pi}\cos^{-1}\!\dfrac{9-0.43}{9}=\qty{0.98}{\milli\second}$;
+$I_{peak}'=\dfrac{2\cdot0.1\cdot0.02}{0.98\times10^{-3}}=\qty{4.1}{\ampere}$
+(larger). Lower ripple, higher current peak --- the trade-off in action.
+\end{solution}
+
+%=======================================================================
+\chapter{Power factor and its correction}\label{ch:pf}
+%=======================================================================
+
+The rectifier-capacitor front end draws current in short pulses, far from the
+sinusoidal in-phase current an ideal resistive load would draw. Two effects
+lower the \textbf{power factor} $PF=P/S$: a \emph{phase shift} between voltage and
+current (displacement, $\cos\varphi$) and \emph{harmonic distortion}
+($1/\sqrt{1+THD^2}$). Regulations require $PF\gtrsim0.9$.
+
+\begin{figure}[h]\centering
+\begin{tabular}{@{}c@{}}
+\begin{tikzpicture}[font=\footnotesize]
+\begin{axis}[width=11cm,height=3.3cm,axis lines=middle,
+  xlabel={$\omega t$},xtick=\empty,ytick=\empty,xlabel style={at={(1,0.5)}},
+  xmin=0,xmax=740,ymin=-1.15,ymax=1.15,
+  title={\footnotesize\textbf{Resistive load:} $v,i$ in phase $\Rightarrow p\ge0$, $PF=1$},
+  legend style={font=\scriptsize,at={(0.5,-0.30)},anchor=north,legend columns=3},
+  every axis plot/.append style={very thick}]
+\addplot[fill=red!22,draw=red!55,samples=260,domain=0:720]{0.8*sin(x)*sin(x)}\closedcycle;
+\addlegendentry{$p=vi$}
+\addplot[accent,samples=260,domain=0:720]{sin(x)};\addlegendentry{$v$}
+\addplot[accent2,samples=260,domain=0:720]{0.8*sin(x)};\addlegendentry{$i$}
+\end{axis}
+\end{tikzpicture}\\[10pt]
+\begin{tikzpicture}[font=\footnotesize]
+\begin{axis}[width=11cm,height=3.3cm,axis lines=middle,
+  xlabel={$\omega t$},xtick=\empty,ytick=\empty,xlabel style={at={(1,0.5)}},
+  xmin=0,xmax=740,ymin=-1.15,ymax=1.15,
+  title={\footnotesize\textbf{Inductive load:} $i$ lags $90^\circ\Rightarrow\overline p=0$, $PF=0$},
+  every axis plot/.append style={very thick}]
+\addplot[fill=red!22,draw=red!55,samples=260,domain=0:720]{-0.8*sin(x)*cos(x)}\closedcycle;
+\addplot[accent,samples=260,domain=0:720]{sin(x)};
+\addplot[accent2,samples=260,domain=0:720]{-0.8*cos(x)};
+\end{axis}
+\end{tikzpicture}
+\end{tabular}
+\caption{Instantaneous power $p=vi$ (shaded). With a resistive load $v$ and $i$ are
+in phase, so $p$ never goes negative --- real power flows continuously ($PF=1$).
+With a purely inductive load $i$ lags by $90^\circ$, so $p$ is positive and
+negative in equal measure: the average power is zero ($PF=0$) yet the current
+still loads the line. A real $R$--$L$ load lies between, at $PF=\cos\varphi$.}
+\label{fig:acpower}
+\end{figure}
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[scale=1.1,>={Latex[length=2mm]}]
+  \draw[->,very thick,accent] (0,0)--(3,0) node[midway,below]{$P$ (W)};
+  \draw[->,very thick,accent2] (3,0)--(3,2) node[midway,right]{$Q$ (var)};
+  \draw[->,very thick,black] (0,0)--(3,2) node[midway,above left]{$S$ (VA)};
+  \draw (0.7,0) arc (0:33.7:0.7); \node at (1.0,0.22){$\varphi$};
+\end{tikzpicture}
+\caption{Power triangle: $S=\sqrt{P^2+Q^2}$, $PF=\cos\varphi=P/S$.}
+\label{fig:ptriangle}
+\end{figure}
+
+\begin{protocol}[Compute the power factor; correct it]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Current}: for a series $R$--$L$ load,
+        $I_S=\dfrac{V_S}{R+j\omega L}$; magnitude
+        $|I_S|=\dfrac{V_S}{\sqrt{R^2+(\omega L)^2}}$, phase
+        $\angle I_S=-\arctan\dfrac{\omega L}{R}$.
+  \item \textbf{Powers}: $S=V_{RMS}I_{RMS}$; $P=V_{RMS}I_{RMS}\cos\varphi$;
+        $PF=P/S=\cos\varphi$.
+  \item \textbf{Correct (PFC)}: add a \emph{parallel} capacitor to cancel the
+        reactive part. For the $R$--$L$ load, $\angle I_S=0$ requires
+        $C=\dfrac{L}{\omega^2L^2+R^2}$ (Appendix~\ref{app:pf}). The load voltage
+        and current are unchanged; only the source current is brought into phase.
+\end{enumerate}
+\end{protocol}
+
+\begin{figure}[h]\centering
+\begin{circuitikz}[scale=1.0,transform shape]
+  \draw (0,0) to[sV=$v_S$] (0,3) coordinate(t);
+  % series R-L load branch
+  \draw (t) -- (2,3);
+  \draw (2,3) to[R=$R$] (2,1.6) to[L=$L$] (2,0) -- (0,0);
+  % parallel PFC capacitor
+  \draw (t) -- (3.6,3) to[C=$C$] (3.6,0) -- (2,0);
+  \node at (3.6,3.35){\footnotesize PFC};
+\end{circuitikz}
+\caption{Power-factor correction: a capacitor in parallel with the inductive load
+cancels the phase shift seen by the source.}
+\label{fig:pfc}
+\end{figure}
+
+\begin{note}
+\textbf{Where $C=L/(R^2+\omega^2L^2)$ comes from.} Work in admittances. The $R$--$L$
+load has
+\[ Y_{load}=\frac{1}{R+j\omega L}=\frac{R-j\omega L}{R^2+\omega^2L^2}, \]
+whose imaginary part (susceptance) is the lagging $-\dfrac{\omega L}{R^2+\omega^2L^2}$. A
+parallel capacitor adds $+\omega C$. Unity power factor means the \emph{total} susceptance
+vanishes, $\omega C=\dfrac{\omega L}{R^2+\omega^2L^2}$, hence
+$C=\dfrac{L}{R^2+\omega^2L^2}$. The load's \emph{real} current --- and therefore the power
+it consumes --- is untouched; only the reactive current is moved off the grid and onto the
+local $LC$ pair. (With $R\to0$ this collapses to the resonance condition
+$\omega^2LC=1$, the pure-inductor case below.)
+\end{note}
+
+\begin{wexample}[$R$--$L$ load and its correction]
+$R=\qty{3}{\ohm}$, $L=\qty{10.6}{\milli\henry}$, $V_S=\qty{480}{\volt_{RMS}}$ at
+$f=\qty{60}{\hertz}$ ($\omega=\qty{377}{rad/s}$). Then $\omega L\approx4$,
+$\sqrt{R^2+(\omega L)^2}=\sqrt{9+16}=\qty{5}{\ohm}$, so
+$I_S=480/5=\qty{96}{\ampere}$, $\varphi=\arctan(4/3)=53.1^\circ$.
+$S=480\cdot96=\qty{46.08}{\kilo\VA}$, $P=S\cos\varphi=\qty{27.67}{\kilo\watt}$,
+$PF=0.6$. \textbf{Correction}: $C=\dfrac{L}{\omega^2L^2+R^2}=\dfrac{0.0106}{25}
+=\qty{424.5}{\micro\farad}$; the source current drops to $I_S=\qty{58}{\ampere}$
+and $PF=1$ --- same load power, far less current drawn from the grid.
+\end{wexample}
+
+\begin{exercise}
+A purely inductive load $L=\qty{10.6}{\milli\henry}$ (no $R$), same source. Find
+$I_S$ and $PF$, and explain the energy flow.
+\end{exercise}
+\begin{solution}
+$|I_S|=V_S/(\omega L)=480/4=\qty{120}{\ampere}$, $\varphi=90^\circ$, $PF=\cos
+90^\circ=0$. The active power is zero: energy sloshes into the inductor each
+quarter-cycle and back out the next, dissipating only in the grid wiring --- the
+load uses no net power yet still loads the network.
+\end{solution}
+
+\begin{exercise}[Compensate the pure inductor]
+Correct the previous exercise's load ($L=\qty{10.6}{\milli\henry}$, no $R$,
+$V_S=\qty{480}{\volt_{RMS}}$, $\omega=\qty{377}{rad/s}$): find the parallel $C$
+that brings the source current to zero, and explain where the inductor's energy
+then comes from.
+\end{exercise}
+\begin{solution}
+With $R=0$ the PFC formula reduces to resonance:
+$C=\dfrac{L}{\omega^2L^2}=\dfrac{1}{\omega^2L}
+=\dfrac{1}{377^2\times0.0106}=\qty{663.8}{\micro\farad}$, and ideally
+$I_S=0$. The $LC$ pair is a parallel resonator at \qty{60}{\hertz}: the energy
+simply sloshes \emph{between} the capacitor and the inductor each quarter-cycle,
+and the grid no longer carries that exchange. (Sanity check: $R\to0$ in
+$C=L/(R^2+\omega^2L^2)$ gives the same result.)
+\end{solution}
+
+%=======================================================================
+\chapter{Linear voltage regulators}\label{ch:linear}
+%=======================================================================
+
+A linear regulator holds its output constant by behaving as a \emph{variable voltage
+divider} between the input and ground: a series element $R_S$ and a shunt element
+$R_P$, one of which is continuously trimmed to absorb line ($\Delta V_{in}$) and load
+($\Delta I_{out}$) variations so that $V_L$ stays put. \emph{Which} element does the
+trimming gives the two classic topologies.
+
+\section{Shunt (parallel) and series topologies}
+\textbf{Parallel (shunt) regulator} (Fig.~\ref{fig:lvr-types}a). The series resistor
+$R_S$ is \emph{fixed}; the variable element $R_P$ sits \emph{across} the load and is
+realised by a \textbf{Zener diode}, which pins its own terminal voltage. When the load
+draws less, the shunt swallows the difference, so the current from the source
+$I\approx(V_{in}-V_L)/R_S$ stays essentially \emph{constant} whatever the load does. It
+is trivially simple and short-circuit-friendly, but it wastes that full current at all
+times --- fit only for small or fixed loads. (That Zener shunt is exactly the voltage
+\emph{reference} the series type uses internally.)
+
+\textbf{Series regulator} (Fig.~\ref{fig:lvr-types}b). Now the \emph{series} element
+$R_S$ is the variable one and no shunt is needed: an amplifier senses $V_L$ and trims
+$R_S$ (a pass transistor) through \textbf{negative feedback}, so only the load current
+flows. It is far more efficient, and is the standard choice the rest of this chapter
+develops.
+
+\begin{figure}[h]\centering
+\resizebox{0.92\linewidth}{!}{%
+\begin{tabular}{cc}
+% --- (a) Parallel (shunt) regulator ---
+\begin{circuitikz}[scale=0.8,transform shape]
+  \draw (0,0) to[sV=$V_{in}$] (0,2.8) coordinate(vp);
+  \draw (vp) to[R=$R_S$] (2.6,2.8) coordinate(A);          % fixed series resistor
+  \draw (A) to[zD,l_=$R_P$] (A|-0,0);                       % Zener shunt = variable element
+  \draw (A) -- ++(1.7,0) coordinate(lo) to[R,l^=Load] (lo|-0,0);
+  \draw (0,0) -- (lo|-0,0);
+  \draw (lo) node[right]{$V_L$};
+\end{circuitikz}
+&
+% --- (b) Series regulator (concept) ---
+\begin{circuitikz}[scale=0.8,transform shape]
+  \draw (0,0) to[sV=$V_{in}$] (0,2.8) coordinate(vp);
+  \draw (vp) to[vR=$R_S$] (2.8,2.8) coordinate(A);          % variable series resistor
+  \draw (A) -- ++(1.4,0) coordinate(lo) to[R,l_=Load] (lo|-0,0);
+  \draw (0,0) -- (lo|-0,0);
+  \draw (lo) node[right]{$V_L$};
+  \draw[->,dashed,accent,thick] (3.7,0.8) -- (1.4,0.8) -- (1.4,2.45);
+  \node[font=\scriptsize] at (2.7,0.55){senses $V_L$};
+\end{circuitikz}
+\\[2pt]
+{\footnotesize (a) Parallel (shunt): fixed $R_S$, variable $R_P$ (a Zener)} &
+{\footnotesize (b) Series: variable $R_S$, set by feedback from $V_L$}
+\end{tabular}}
+\caption{The two linear-regulator topologies. \textbf{(a)} A \emph{shunt} regulator
+fixes the series resistor and varies a parallel element (a Zener) across the load, so it
+draws roughly constant current regardless of load. \textbf{(b)} A \emph{series} regulator
+varies the series element under feedback from $V_L$ so only the load current flows
+(detailed in Fig.~\ref{fig:linreg}).}
+\label{fig:lvr-types}
+\end{figure}
+
+\section{The detailed series regulator}
+In the practical series regulator the variable resistance is the controlled
+on-resistance of an \emph{npn} pass transistor, and the amplifier is a real op-amp that
+compares a divided copy of $V_L$ against a reference (a Zener or band-gap). At the
+op-amp's virtual short the inverting input sits at $V_{REF}$, while the divider makes it
+$V_{REF}=V_L\,R_2/(R_1+R_2)$; equating the two gives
+\[ V_L = V_{REF}\Bigl(1+\frac{R_1}{R_2}\Bigr), \]
+independent of $V_{in}$ and $I_{out}$ to the extent the loop gain is high. The
+regulator's \emph{ripple rejection} is simply that loop gain at the ripple frequency ---
+the PSRR number on the data sheet (Chapter~\ref{ch:spec}).
+
+\begin{figure}[h]\centering
+\begin{circuitikz}[scale=1.0,transform shape]
+  % --- op amp drives the base ---
+  \node[op amp, noinv input up, scale=0.9] (oa) at (-1.2,1.4){};
+  \coordinate (oaout) at (oa.out);
+  \coordinate (oaneg) at (oa.-);
+  \coordinate (oapos) at (oa.+);
+  % --- pass transistor (npn) ---
+  \node[npn] (Q) at (1.8,2.4){};
+  % Vin rail to collector
+  \draw (-3.3,3.4) node[left]{$V_{in}$} -- (1.8,3.4) -- (Q.C);
+  % base drive from op-amp output
+  \draw (oaout) -- (Q.B);
+  % emitter -> output node
+  \draw (Q.E) -- (1.8,1.2) coordinate(vout);
+  \draw (vout) -- (4.7,1.2) node[right]{$V_{out}=V_L$};
+  % feedback divider
+  \draw (3.3,1.2) -- (3.3,0.4) coordinate(rt);
+  \draw (rt) to[R=$R_1$] (3.3,-0.8) coordinate(mid);
+  \draw (mid) to[R=$R_2$] (3.3,-2.2) node[ground]{};
+  % divider midpoint back to the inverting input (routed on the far left)
+  \draw (mid) -- (-2.6,-0.8) |- (oaneg);
+  % reference (Zener) on the non-inverting input
+  \draw (oapos) -- (-3.3,0.8) coordinate(rp);
+  \draw (rp) to[zD=$V_{REF}$] (-3.3,-2.2) node[ground]{};
+\end{circuitikz}
+\caption{Series linear regulator: the op-amp drives the pass transistor so that
+the divided output equals $V_{REF}$ (a Zener/band-gap), giving
+$V_L=V_{REF}(1+R_1/R_2)$.}
+\label{fig:linreg}
+\end{figure}
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{axis}[width=11cm,height=4.8cm,
+  xlabel={$t$},ylabel={$V$},xtick=\empty,
+  xmin=0,xmax=40,ymin=0,ymax=12.6,
+  ytick={5,7,8,11},yticklabels={$V_{out}$,,$V_{MIN}$,$V_{MAX}$},
+  legend style={font=\footnotesize,at={(0.5,1.28)},anchor=north,legend columns=3},
+  every axis plot/.append style={very thick}]
+% rippled regulator input (the filter output)
+\addplot[red!70,dashed] coordinates
+  {(0,9.5)(5,11)(14,8)(15,11)(24,8)(25,11)(34,8)(35,11)(40,9.3)};
+\addlegendentry{$V_{in}$ (rippled)}
+\addplot[accent,domain=0:40]{5};\addlegendentry{$V_{out}$ (regulated)}
+\addplot[accent2,densely dotted,domain=0:40]{7};
+\addlegendentry{$V_{out}+V_{DO,min}$}
+% headroom markers
+\draw[<->] (axis cs:20,5) -- (axis cs:20,7) node[midway,right]{$V_{DO,min}$};
+\draw[<->] (axis cs:24,7) -- (axis cs:24,8) node[midway,right]{margin};
+\end{axis}
+\end{tikzpicture}
+\caption{Dropout headroom. The regulator input is the rippled filter output,
+swinging between $V_{MAX}$ and $V_{MIN}$. Regulation holds only while
+$V_{in}>V_{out}+V_{DO,min}$ at \emph{every} instant --- so the ripple valley
+$V_{MIN}$ must stay above the dropout floor. Here $V_{MIN}=\qty{8}{\volt}$ clears
+the floor $5+2=\qty{7}{\volt}$ by \qty{1}{\volt}; shrink the filter $C$ until
+$V_{MIN}<\qty{7}{\volt}$ and the output would sag with the input each cycle.}
+\label{fig:dropout}
+\end{figure}
+
+\begin{protocol}[Linear-regulator output, dissipation and efficiency]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Output}: $V_L=V_{REF}\bigl(1+R_1/R_2\bigr)$ (set by the divider).
+  \item \textbf{Dropout}: $V_{out}=V_{in}-V_{DO}$; require $V_{out}<V_{MIN}$ of
+        the rippled input, and $V_{DO}\ge V_{DO,min}$ ($\approx\qty{2}{\volt}$ for
+        a 78xx).
+  \item \textbf{Dissipation}: $P_{reg}\approx(V_{in}-V_{out})I_{out}=V_{DO}I_{out}$
+        --- all heat.
+  \item \textbf{Efficiency}: $\eta=V_{out}/V_{in}=1-V_{DO}/V_{in}$;
+        $\eta_{MAX}=V_{out}/(V_{out}+V_{DO,min})$.
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[Efficiency of a 78xx ($V_{DO,min}=\qty{2}{\volt}$)]
+$\eta_{MAX}=V_{out}/(V_{out}+2)$:
+\begin{center}\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+$V_{out}$ (V) & 1.5 & 3.3 & 5 & 9 & 12\\
+\midrule
+$\eta_{MAX}$ & 42.9\% & 62.3\% & 71.4\% & 81.8\% & 85.7\%\\
+\bottomrule
+\end{tabular}
+\end{center}
+Low output voltages waste most of the input power as heat --- the central reason
+switching regulators exist.
+\end{wexample}
+
+\begin{wexample}[Dissipation: does it need a heat sink?]
+A 7805 supplies $I_{out}=\qty{1}{\ampere}$ from $V_{in}=\qty{12}{\volt}$:
+$P_{reg}=(V_{in}-V_{out})I_{out}=(12-5)\times1=\qty{7}{\watt}$ and
+$\eta=5/12=\qty{42}{\percent}$. A bare TO-220 has a junction-to-ambient thermal
+resistance $R_{th}\approx\qty{60}{K/W}$, so the junction would sit
+$7\times60=\qty{420}{K}$ above ambient --- far past the \qty{125}{\celsius}
+limit. With a \qty{10}{K/W} heat sink the rise is \qty{70}{K}:
+$T_j\approx25+70=\qty{95}{\celsius}$ --- acceptable. The heat sink is not
+optional here.
+\end{wexample}
+
+\begin{exercise}
+Same 7805. (a) At $V_{in}=\qty{8}{\volt}$, $I_{out}=\qty{200}{\milli\ampere}$:
+dissipation, efficiency, and is the bare package (\qty{60}{K/W}) enough at
+$T_{amb}=\qty{25}{\celsius}$? (b) What is the lowest rippled-input \emph{valley}
+that still regulates?
+\end{exercise}
+\begin{solution}
+(a) $P_{reg}=(8-5)\times0.2=\qty{0.6}{\watt}$, $\eta=5/8=\qty{62.5}{\percent}$;
+junction rise $0.6\times60=\qty{36}{K}\Rightarrow
+T_j\approx\qty{61}{\celsius}$ --- fine without a heat sink. Reducing the
+input headroom helps twice: less heat \emph{and} better efficiency.
+(b) $V_{MIN}=V_{out}+V_{DO,min}=5+2=\qty{7}{\volt}$ --- below it the output
+sags with the ripple (Fig.~\ref{fig:dropout}).
+\end{solution}
+
+\begin{note}
+A \textbf{Low-Drop-Out (LDO)} regulator replaces the common-collector NPN with a
+PNP or pMOS pass device, so $V_{DO}$ can be only a few mV --- recovering
+efficiency at low $V_{out}$, at the cost of trickier stability (an external
+output capacitor sets a compensation pole).
+\end{note}
+
+%=======================================================================
+\chapter{Switching regulators}\label{ch:switch}
+%=======================================================================
+
+A switching regulator transfers energy with \emph{only} reactive components
+(inductor, capacitors) and switches, so ideally it dissipates nothing
+($\eta\to100\%$, in practice \qtyrange{80}{90}{\percent}). A primary switch
+$SW_1$ (an nMOS) chops at frequency $f_{SW}$ with duty cycle
+$\delta=T_{ON}/T_{SW}$; a secondary switch $SW_2$ (a diode) conducts in the
+opposite phase. The inductor current ramps up and down, triangular in shape:
+in \textbf{CCM} it never reaches zero, in \textbf{DCM} it does.
+
+\begin{figure}[h]\centering
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{ccc}
+% Buck
+\begin{circuitikz}[scale=0.72,transform shape]
+  \draw (0,0) to[sV=$V_{in}$] (0,3) coordinate(vp);
+  \draw (vp) -- (1,3) coordinate(n1);
+  \draw (n1) to[C=$C_{in}$] (1,0);
+  \draw (n1) to[nos,l=$SW_1$] (3,3) coordinate(A);
+  \draw (A) to[L=$L$] (5,3) coordinate(vo);
+  % freewheel (catch) diode SW2: conducts ground -> A when SW1 opens
+  \draw (A) to[D,l=$SW_2$,invert] (3,0);
+  \draw (vo) to[C=$C$] (5,0);
+  \draw (vo) -- ++(1.3,0) coordinate(lo) to[R=$R_L$] (lo|-0,0);
+  \draw (0,0) -- (lo|-0,0);
+  \draw (lo) node[right]{$V_{out}$};
+\end{circuitikz}
+&
+% Boost
+\begin{circuitikz}[scale=0.72,transform shape]
+  \draw (0,0) to[sV=$V_{in}$] (0,3) coordinate(vp);
+  \draw (vp) -- (1,3) coordinate(n1);
+  \draw (n1) to[C=$C_{in}$] (1,0);
+  \draw (n1) to[L=$L$] (3,3) coordinate(A);
+  \draw (A) to[D,l=$SW_2$] (5,3) coordinate(vo);
+  \draw (A) to[nos,l=$SW_1$] (3,0);
+  \draw (vo) to[C=$C$] (5,0);
+  \draw (vo) -- ++(1.3,0) coordinate(lo) to[R=$R_L$] (lo|-0,0);
+  \draw (0,0) -- (lo|-0,0);
+  \draw (lo) node[right]{$V_{out}$};
+\end{circuitikz}
+&
+% Buck-Boost
+\begin{circuitikz}[scale=0.72,transform shape]
+  \draw (0,0) to[sV=$V_{in}$] (0,3) coordinate(vp);
+  \draw (vp) -- (1,3) coordinate(n1);
+  \draw (n1) to[C=$C_{in}$] (1,0);
+  \draw (n1) to[nos,l=$SW_1$] (3,3) coordinate(A);
+  % diode SW2 for the inverting buck-boost: cathode at A (conducts vo -> A), so vo goes negative
+  \draw (A) to[D,l=$SW_2$,invert] (5,3) coordinate(vo);
+  \draw (A) to[L=$L$] (3,0);
+  \draw (vo) to[C=$C$] (5,0);
+  \draw (vo) -- ++(1.3,0) coordinate(lo) to[R=$R_L$] (lo|-0,0);
+  \draw (0,0) -- (lo|-0,0);
+  \draw (lo) node[right]{$V_{out}$};
+\end{circuitikz}
+\\[2pt]
+{\footnotesize (a) Buck: $V_{out}=\delta V_{in}$} &
+{\footnotesize (b) Boost: $V_{out}=\frac{V_{in}}{1-\delta}$} &
+{\footnotesize (c) Buck-Boost: $V_{out}=-\frac{\delta}{1-\delta}V_{in}$}
+\end{tabular}}
+\caption{The three basic DC--DC converters ($SW_1$ = nMOS, $SW_2$ = diode).
+The Switching Controller (not shown) sets $\delta$ by PWM.}
+\label{fig:converters}
+\end{figure}
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}
+\begin{axis}[width=11cm,height=4cm,xlabel={$t$},ylabel={$I_L$},
+  xtick=\empty,ytick={0},ymin=-0.3,ymax=3,xmin=0,xmax=6,
+  legend style={font=\footnotesize,at={(0.98,0.95)},anchor=north east},
+  every axis plot/.append style={very thick}]
+\addplot[accent] coordinates {(0,1)(1,2.4)(2,1)(3,2.4)(4,1)(5,2.4)(6,1)};
+\addlegendentry{CCM ($I_L>0$ always)}
+\addplot[accent2,dashed] coordinates {(0,0)(0.8,2.0)(1.6,0)(2,0)(2.8,2.0)(3.6,0)(4,0)(4.8,2.0)(5.6,0)(6,0)};
+\addlegendentry{DCM ($I_L$ reaches 0)}
+\end{axis}
+\end{tikzpicture}
+\caption{Inductor current: triangular, ramping up while $SW_1$ is closed and down
+while open. DCM appears at low output current.}
+\label{fig:ilt}
+\end{figure}
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[font=\footnotesize]
+\begin{axis}[width=11cm,height=4.4cm,axis lines=middle,
+  xlabel={$t$},ylabel={$v_L$},xtick=\empty,xlabel style={at={(1,0.5)}},
+  xmin=0,xmax=2.05,ymin=-6.4,ymax=5.8,
+  ytick={4,-5},yticklabels={$V_{in}\!-\!V_{out}$,$-V_{out}$},
+  every axis plot/.append style={very thick}]
+\addplot[accent] coordinates
+  {(0,4)(0.55,4)(0.55,-5)(1,-5)(1,4)(1.55,4)(1.55,-5)(2,-5)};
+\draw[<->] (axis cs:0,5.1) -- (axis cs:0.55,5.1) node[midway,above=-1pt]{$T_{ON}=\delta T$};
+\draw[<->] (axis cs:0.55,5.1) -- (axis cs:1,5.1) node[midway,above=-1pt]{$T_{OFF}$};
+\node[accent!55!black] at (axis cs:0.27,2.0){$+$};
+\node[accent!55!black] at (axis cs:0.78,-3.0){$-$};
+\end{axis}
+\end{tikzpicture}
+\caption{Inductor voltage in a Buck (CCM). With $SW_1$ closed
+($T_{ON}=\delta T$) the inductor sees $+(V_{in}-V_{out})$; with $SW_1$ open the
+diode $SW_2$ conducts and it sees $-V_{out}$. Each constant level makes $i_L$ ramp
+\emph{linearly} (Fig.~\ref{fig:ilt}), and steady state forces the volt--seconds to
+balance, $(V_{in}-V_{out})\,\delta=V_{out}(1-\delta)$, i.e.\
+$V_{out}=\delta V_{in}$.}
+\label{fig:vl}
+\end{figure}
+
+\section{Transfer functions from volt--second balance}
+In steady state the inductor current returns to the same value every cycle, so its net
+change over a period is zero --- equivalently the \emph{average} inductor voltage is
+zero. This is \textbf{volt--second balance}: the area $v_L$ spends positive must equal
+the area it spends negative, $\langle v_L\rangle = V_{ON}\,\delta T + V_{OFF}(1-\delta)T
+= 0$. Applying it to each topology gives the transfer function directly --- no calculus,
+just equal areas.
+
+\begin{description}[leftmargin=2.0cm,style=nextline]
+  \item[Buck] On: $v_L=V_{in}-V_{out}$ for $\delta T$; off: $v_L=-V_{out}$ for
+        $(1-\delta)T$. Balance $(V_{in}-V_{out})\delta=V_{out}(1-\delta)$ gives
+        \[ V_{out}=\delta\,V_{in}\quad(\text{step-down, }0<\delta<1). \]
+  \item[Boost] On, SW$_1$ ties the inductor across the input: $v_L=V_{in}$ for
+        $\delta T$. Off, the inductor stacks on $V_{in}$ and pushes through SW$_2$:
+        $v_L=V_{in}-V_{out}$ for $(1-\delta)T$. Balance
+        $V_{in}\delta=(V_{out}-V_{in})(1-\delta)$ gives
+        \[ V_{out}=\frac{V_{in}}{1-\delta}\quad(\text{step-up}). \]
+  \item[Buck--Boost] On: $v_L=V_{in}$ for $\delta T$. Off, the inductor discharges into
+        the output through SW$_2$: $v_L=V_{out}$ for $(1-\delta)T$ (with $V_{out}<0$).
+        Balance $V_{in}\delta=-V_{out}(1-\delta)$ gives
+        \[ V_{out}=-\frac{\delta}{1-\delta}\,V_{in}\quad(\text{step up \emph{or} down, inverted}). \]
+\end{description}
+
+\noindent The same equal-areas idea fixes the inductor-current ripple: during the ON
+time the constant voltage $V_{ON}$ ramps $i_L$ by $\Delta I_L = V_{ON}\,\delta T/L$, which
+is the quantity the CCM check below compares against the load.
+
+\begin{protocol}[Choose the topology and solve the duty cycle]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item \textbf{Pick topology} from $V_{out}$ vs $V_{in}$: step-down $\to$ Buck;
+        step-up $\to$ Boost; invert/either $\to$ Buck-Boost.
+  \item \textbf{Solve $\delta$} from the CCM transfer function
+        (Fig.~\ref{fig:converters}); get the \emph{range} of $\delta$ from the
+        $V_{in}$ range.
+  \item \textbf{Check CCM}: find the minimum $L$ that keeps $I_L>0$ at the lowest
+        load (Appendix~\ref{app:conv}); below it the converter enters DCM and
+        load regulation degrades.
+  \item \textbf{Output ripple}: $\Delta V_{out}=\Delta I_C\cdot\text{ESR}$ of the
+        output capacitor.
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[$V_{in}=\qty{9}{\volt}\pm\qty{1}{\volt}$, three targets]
+\textbf{Buck} $V_{out}=\qty{5}{\volt}$: $\delta=V_{out}/V_{in}=5/9=55.5\%$;
+range $\delta_{MAX}=5/8=62.5\%$, $\delta_{MIN}=5/10=50\%$.
+\textbf{Boost} $V_{out}=\qty{15}{\volt}$: $\delta=1-V_{in}/V_{out}=1-9/15=40\%$;
+range $46.7\%\dots33.3\%$.
+\textbf{Buck-Boost} $V_{out}=\qty{-9}{\volt}$:
+$\delta=\dfrac{V_{out}}{V_{out}-V_{in}}=\dfrac{-9}{-18}=50\%$;
+range $52.9\%\dots47.4\%$. The controller adjusts $\delta$ as $V_{in}$ drifts.
+\end{wexample}
+
+\begin{wexample}[Minimum $L$ for CCM (Buck)]
+The Buck question: find the smallest $L$ that keeps the
+converter in CCM at the lightest load. The inductor ripple is
+$\Delta I_L=\dfrac{(V_{in}-V_{out})\,\delta}{L\,f_{SW}}$, and CCM requires
+$\Delta I_L\le2I_{out}$ (Appendix~\ref{app:conv}), so
+$L_{min}=\dfrac{(V_{in}-V_{out})\,\delta}{2I_{out,min}f_{SW}}$. For the running
+Buck ($V_{in}=\qty{9}{\volt}$, $V_{out}=\qty{5}{\volt}$, $\delta=0.556$) with
+$f_{SW}=\qty{100}{\kilo\hertz}$ and $I_{out,min}=\qty{50}{\milli\ampere}$:
+$L_{min}=\dfrac{4\times0.556}{2\times0.05\times10^5}=\qty{222}{\micro\henry}$;
+pick the next standard \qty{330}{\micro\henry}
+($\Delta I_L=\qty{67}{\milli\ampere}<\qty{100}{\milli\ampere}$ --- CCM holds).
+Below $I_{out,min}$ the converter enters DCM and $V_{out}$ rises unless the
+controller trims $\delta$.
+\end{wexample}
+
+\begin{exercise}
+A \qty{12}{\volt} rail must come from a battery $V_{in}=(5\pm0.5)\,\unit{\volt}$,
+$f_{SW}=\qty{200}{\kilo\hertz}$. (a) Topology and the $\delta$ range. (b) With a
+capacitor-current swing $\Delta I_C=\qty{1.2}{\ampere}$ and
+$\text{ESR}=\qty{50}{\milli\ohm}$, the output ripple. (c) Why is this
+topology's feedback loop deliberately made \emph{slow}?
+\end{exercise}
+\begin{solution}
+(a) $V_{out}>V_{in}$: \textbf{Boost}, $\delta=1-V_{in}/V_{out}$; over
+$V_{in}=4.5\dots5.5$: $\delta=62.5\%\dots54.2\%$ (nominal $58.3\%$).
+(b) $\Delta V_{out}=\Delta I_C\cdot\text{ESR}=1.2\times0.05=\qty{60}{\milli\volt}$
+--- in a switching supply the ESR, not the capacitance, usually sets the ripple.
+(c) The Boost is prone to instability, so its loop gain is designed with a low
+bandwidth: it reacts slowly to load changes but does not oscillate.
+\end{solution}
+
+\begin{note}
+The \textbf{Flyback} converter is a Buck-Boost whose inductor becomes a
+transformer: it adds galvanic isolation, a turns-ratio degree of freedom, a
+selectable output polarity, and multiple outputs. A \textbf{Boost} run from the
+rectified mains is the standard active \textbf{PFC} stage: by shaping the
+inductor current to follow the input voltage it presents a near-resistive load to
+the grid.
+\end{note}
+
+%=======================================================================
+\chapter{Laboratory: Buck converter}\label{ch:lab-buck}
+%=======================================================================
+
+This lab characterises a real DC--DC \textbf{buck} converter (an XL4015 module),
+putting Chapter~\ref{ch:switch} to the test: measure input/output voltages under
+load and no load, decide whether it runs in \textbf{CCM} or \textbf{DCM}, read the
+switching waveform, and map the efficiency. Instruments: an HP~34401A multimeter,
+a Rigol DP832 supply, a Rigol DS1054 DSO, and an adjustable high-power resistive
+load.
+
+\begin{keyidea}
+A switcher's behaviour splits in two: \emph{static} (DC in/out, regulation,
+efficiency --- a multimeter job) and \emph{dynamic} (the switching ripple ---
+a scope job). The single most important question is which conduction mode it is
+in, because every dynamic formula depends on the answer.
+\end{keyidea}
+
+\section{Static measurements and the CCM/DCM test}
+
+Read $V_{in}$ and $V_{out}$ with and without the load; with a load $R_L$ the output
+current is $I_{out}=V_{out}/R_L$. The boundary between continuous (CCM) and
+discontinuous (DCM) conduction is the \emph{critical} current --- half the
+inductor-current ripple:
+\[
+I_{B}=\frac{V_{out}\,(V_{in}-V_{out})}{2\,L\,f_{sw}\,V_{in}}.
+\]
+
+\begin{protocol}[Decide CCM vs DCM]
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Measure $V_{in}$, $V_{out}$ and (loaded) compute $I_{out}=V_{out}/R_L$.
+  \item Compute the boundary current $I_{B}$ from the nominal $L$ and $f_{sw}$.
+  \item If $I_{out}>I_{B}$ the converter is in \textbf{CCM}; if $I_{out}<I_{B}$
+        it is in \textbf{DCM}. No load ($I_{out}\!\approx\!0$) is always DCM.
+\end{enumerate}
+\end{protocol}
+
+\begin{wexample}[Two operating points]
+\textbf{Case 1} ($V_{in}=\qty{8}{\volt}$, $V_{out}=\qty{5}{\volt}$, $R_L\approx
+\qty{30.5}{\ohm}$): loaded $I_{out}\approx\qty{0.16}{\ampere}$ exceeds the boundary
+$I_{B}\approx\qty{0.11}{\ampere}$, so it runs in \textbf{CCM}. \textbf{Case 2}
+($V_{in}=\qty{24}{\volt}$, $V_{out}=\qty{5}{\volt}$, $R_L\approx\qty{50}{\ohm}$):
+$I_{out}\approx\qty{0.10}{\ampere}$ is below $I_{B}\approx\qty{0.23}{\ampere}$,
+so despite the heavier line it stays in \textbf{DCM} --- a light load at a high
+step-down ratio keeps you discontinuous.
+\end{wexample}
+
+\section{Load regulation}
+
+Load regulation is the output droop from no-load to full-load,
+$\Delta V_{out}=V_{out,\text{noload}}-V_{out,\text{load}}$. Case~1 gave
+$\Delta V_{out}\approx\qty{68}{\milli\volt}$ on a \qty{5}{\volt} output
+($\sim\qty{1.4}{\percent}$) --- read it against the spec
+(Chapter~\ref{ch:spec}).
+
+\section{Dynamic waveform and switching parameters}
+
+In CCM the steady-state duty cycle is $\delta=V_{out}/V_{in}$, and from it
+\[
+T_{sw}=\frac1{f_{sw}},\quad T_{on}=\delta\,T_{sw},\quad
+T_{off}=(1-\delta)T_{sw},\quad
+\Delta I_L=\frac{V_{in}-V_{out}}{L}\,T_{on},\quad
+V_{ripple}=\Delta I_L\cdot \mathrm{ESR}.
+\]
+Read the ripple on the DSO in \textbf{AC coupling} (so the small ripple is not lost
+on top of the DC level), and recover $f_{sw}=1/T_{sw}$ and $\delta=T_{on}/T_{sw}$
+from the trace.
+
+\begin{warning}
+The XL4015's switching frequency is set by an \emph{internal} clock you cannot
+probe directly. Its nominal \qty{180}{\kilo\hertz} actually ranges
+\qtyrange{144}{216}{\kilo\hertz}; the measured $f_{sw}\approx\qty{207}{\kilo\hertz}$
+is in-spec. So the time-domain quantities ($T_{sw},T_{on},\delta$) computed from
+the \emph{nominal} frequency will not match the measured ones --- the voltage
+quantities ($V_{out}$, $V_{ripple}$) still do.
+\end{warning}
+
+\section{Efficiency}
+
+Efficiency is $\eta=P_{out}/P_{in}=V_{out}I_{out}/(V_{in}I_{in})$, with $I_{in}$
+read back from the supply. Swept against output current (here at
+$V_{in}=\qty{24}{\volt}$, varying the load) it rises steeply out of light load and
+flattens high --- the shape on the XL4015 datasheet.
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[width=11cm,height=6cm,grid=both,
+  xlabel={$I_{out}$ (A)},ylabel={$\eta$},
+  xmin=0,xmax=1.5,ymin=0.4,ymax=1.0,
+  legend pos=south east,title={Buck efficiency vs load current ($V_{in}=\qty{24}{\volt}$)}]
+\addplot[only marks,mark=*,mark size=1.6pt,accent] coordinates {
+  (0.281,0.533)(0.515,0.742)(0.694,0.823)(0.864,0.885)(1.165,0.942)(1.384,0.980)};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\begin{note}
+Light-load efficiency is poor (Case~2 reached only $\eta\approx0.34$): the
+converter's own quiescent and switching losses are a large fraction of a small
+output power. This is exactly why DCM/light-load operation is penalised, and why
+the curve climbs toward $\sim\!0.98$ as the load grows.
+\end{note}
+
+%=======================================================================
+\appendix
+%=======================================================================
+\chapter{Ripple and conduction time}\label{app:ripple}
+Modelling the discharge as linear at constant load current $I_{out}$, the charge
+removed in one discharge interval $T_{dis}$ is $Q=I_{out}T_{dis}=C\Delta V$, hence
+$\Delta V=I_{out}T_{dis}/C$ (with $T_{dis}=T/2$ full-wave, $T$ half-wave). The
+capacitor recharges only while the rectified sine exceeds the sagged output, i.e.
+from the angle where $V_{MAX}\cos\theta=V_{MAX}-\Delta V$, giving
+$t_c=\frac{T}{2\pi}\cos^{-1}\frac{V_{MAX}-\Delta V}{V_{MAX}}$. Equating the
+triangular charge pulse area $\tfrac12 t_c I_{peak}$ to the charge delivered to
+the load over a period $I_{out}T$ gives $I_{peak}=2I_{out}T/t_c$.
+
+\chapter{Power-factor derivation}\label{app:pf}
+\textbf{Real power.} With $v=V_S\sin\omega t$ and $i=I_S\sin(\omega t-\varphi)$,
+$P=\frac1T\int_0^T vi\,\mathrm dt$. Using
+$\sin\alpha\sin\beta=\tfrac12[\cos(\alpha-\beta)-\cos(\alpha+\beta)]$ the
+double-frequency term integrates to zero, leaving
+$P=\tfrac12 V_S I_S\cos\varphi=V_{RMS}I_{RMS}\cos\varphi$. \textbf{PFC capacitor.}
+Adding $C$ in parallel, $I_S=V_S\bigl(j\omega C+\frac1{R+j\omega L}\bigr)$; setting
+$\Im\{I_S\}=0$ gives $\omega C=\frac{\omega L}{R^2+(\omega L)^2}$, i.e.
+$C=\frac{L}{R^2+\omega^2L^2}$.
+
+\chapter{Converter transfer functions (CCM)}\label{app:conv}
+In steady state the inductor's volt-second balance (average $V_L=0$ over a period)
+gives the CCM ratios: Buck $V_{out}=\delta V_{in}$; Boost
+$V_{out}=V_{in}/(1-\delta)$; Buck-Boost $V_{out}=-\frac{\delta}{1-\delta}V_{in}$.
+They are independent of load (ideal load regulation) but strongly dependent on
+$V_{in}$ (poor line regulation --- the controller fixes this by trimming
+$\delta$). The CCM/DCM boundary sets a minimum inductance, e.g. for the Buck
+$L_{min}$ follows from requiring the triangular ripple
+$\Delta I_L=\frac{(V_{in}-V_{out})\delta T_{SW}}{L}$ to stay below $2I_{out}$.
+
+\chapter{Reference data}\label{app:ref}
+\textbf{Fixed 78xx regulators:} LM7805 (\qty{5}{\volt}), LM7809 (\qty{9}{\volt}),
+LM7812 (\qty{12}{\volt}); LM7905 for negative outputs. Typical
+$V_{DO,min}\approx\qty{2}{\volt}$, ripple rejection $\approx\qty{68}{\dB}$, output
+resistance \qtyrange{15}{30}{\milli\ohm}, short-circuit current $\sim\qty{200}{\milli\ampere}$.
+\textbf{Mains:} $\qty{230}{\volt_{RMS}}\Rightarrow V_p=\sqrt2\cdot230=\qty{325}{\volt}$.
+
+\chapter{Example coverage map}\label{app:coverage}
+\begin{longtable}{@{}p{0.44\linewidth}p{0.32\linewidth}p{0.16\linewidth}@{}}
+\toprule
+\textbf{Example(s)} & \textbf{Protocol / method} & \textbf{Where}\\
+\midrule\endhead
+Ripple rejection 68\,dB; $R_{out}=20$\,m$\Omega$; load/line table & Read the spec (P\,1.1) & Ch.~\ref{ch:spec}\\
+Transformer ratios; secondary/diode sizing & Transformer + rectifier (P\,2.1) & Ch.~\ref{ch:classic}\\
+Filter $C=2.2$\,mF (and $4.7$\,mF) & Ripple/$t_c$/$I_{peak}$ (P\,2.2) & Ch.~\ref{ch:classic}\\
+PF Ex1 ($PF=0.6$), Ex3 (PFC $\to1$), Ex2 (pure $L$, $C=663.8$\,\textmu F) & Power factor + PFC (P\,3.1) & Ch.~\ref{ch:pf}\\
+Linear-reg efficiency table; 78xx dissipation / heat sink & Output/$\eta$/heat (P\,4.1) & Ch.~\ref{ch:linear}\\
+Buck/Boost/Buck-Boost, $V_{in}=9\pm1$\,V & Topology + $\delta$ (P\,5.1) & Ch.~\ref{ch:switch}\\
+Min $L$ for CCM (Buck); Boost design; Flyback; Boost-PFC & CCM check (P\,5.1) / variants & Ch.~\ref{ch:switch}\\
+Bench: CCM/DCM test, load regulation, ripple, efficiency sweep & Characterise buck (P\,6.1) & Ch.~\ref{ch:lab-buck}\\
+\bottomrule
+\end{longtable}
+
+\end{document}

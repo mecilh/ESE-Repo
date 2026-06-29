@@ -1,0 +1,40 @@
+#separator:Semicolon
+#html:false
+ABI;Application Binary Interface — the calling and layout conventions that binaries must agree on.
+ADC;Analog-to-Digital Converter.
+AAPCS;ARM Architecture Procedure Call Standard — the ARM ABI (first four int args in r0-r3, result in r0).
+BJT;Bipolar Junction Transistor.
+BSS;Block Started by Symbol — the zero-initialised data section, reserved in RAM and zeroed at boot.
+CCM;Core-Coupled Memory — fast RAM wired to the core but not on the DMA bus matrix.
+CISC;Complex Instruction Set Computer.
+CMSIS;Cortex Microcontroller Software Interface Standard.
+CPHA / CPOL;Clock Phase / Clock Polarity — the two SPI mode bits.
+DAP;Debug Access Port — the gateway an external probe uses to reach the chip's buses.
+DMA;Direct Memory Access — moving data to/from RAM without the CPU copying each byte.
+DWT;Data Watchpoint and Trace unit — watches data addresses (watchpoints) and holds cycle counters.
+ELF;Executable and Linkable Format — the structured object/executable file format.
+EMI;Electromagnetic Interference.
+FPB;Flash Patch and Breakpoint unit — provides hardware breakpoints via address comparators.
+FPU;Floating-Point Unit.
+GPIO;General-Purpose Input/Output.
+HAL;Hardware Abstraction Layer — ST's high-level, portable driver library.
+I2C;Inter-Integrated Circuit bus — a two-wire, open-drain, addressed serial bus.
+ISR;Interrupt Service Routine.
+ITM;Instrumentation Trace Macrocell — streams printf-style trace out the SWO pin.
+JTAG;Joint Test Action Group — the classic 4-5-wire debug interface.
+LL;Low-Layer driver library — thin, register-near, mostly static inline wrappers.
+LMA / VMA;Load Memory Address (where bytes sit in the image) / Virtual or run Memory Address (where they run).
+MCU / MPU;Microcontroller / Microprocessor (MPU also = Memory-Protection Unit).
+MEMS;Micro-Electro-Mechanical System.
+MISRA;Motor Industry Software Reliability Association — a defensive C coding standard.
+MMU;Memory-Management Unit — provides virtual addresses and hardware isolation (absent on most MCUs).
+MOSFET;Metal-Oxide-Semiconductor Field-Effect Transistor.
+NMI;Non-Maskable Interrupt — cannot be disabled, reserved for critical events.
+NTC;Negative Temperature Coefficient thermistor — resistance falls as temperature rises.
+NVIC;Nested Vectored Interrupt Controller — the Cortex-M interrupt controller.
+PWM;Pulse-Width Modulation.
+RISC;Reduced Instruction Set Computer.
+RTOS;Real-Time Operating System.
+SPI;Serial Peripheral Interface — a fast, full-duplex, chip-select-selected serial bus.
+SRAM;Static Random-Access Memory.
+SWD / SWO;Serial Wire Debug (2-wire debug interface) / Serial Wire Output (trace pin).

@@ -1,0 +1,16 @@
+#separator:Semicolon
+#html:false
+What is a section in an object/executable file?;A named region holding one kind of content (.text, .data, .bss, ...). In firmware you must understand and often control which physical memory each one lands in.
+Two deciding questions that place any byte into a section.;Does it change at run time? (flash vs RAM) and does it need a stored initial value? (in the image vs merely reserved). These sort everything into .text, .rodata, .data, or .bss.
+What does the .text section hold and where does it live?;Executable code (and sometimes constants). It lives in flash and is stored in the image, executing in place.
+What does .rodata hold and where?;const data and string literals. Lives in flash, stored in the image (read-only, runs in place).
+What does .data hold and where?;Globals/statics with a nonzero initial value. They run from RAM (VMA) but their initial values are stored in flash (LMA) and copied to RAM at boot.
+What does .bss hold and where?;Globals/statics initialised to zero (or uninitialised). Live in RAM, with nothing stored in the image — just space reserved and zeroed at boot.
+What is the difference between LMA and VMA?;LMA (Load Memory Address) is where the bytes sit in the image (flash). VMA (Virtual/run Memory Address) is where the program expects them at run time (RAM). They differ for .data.
+Which sections have LMA = VMA, and which differs?;.text and .rodata have LMA = VMA (they run in place from flash). .data has VMA in RAM but LMA in flash (copied at boot). .bss has no LMA at all — only zeroing.
+What does the .ld MEMORY block declare?;The chip's physical memories, e.g. FLASH (rx) ORIGIN = 0x08000000 LENGTH = 256K and RAM (rwx) ORIGIN = 0x20000000 LENGTH = 64K.
+What does the linker phrase > RAM AT> FLASH mean?;Run the section from RAM (VMA in RAM) but store its bytes in flash (LMA in FLASH) — the VMA/LMA split made explicit, used for .data.
+What three things does the reset handler do before calling main?;Copy .data initial values from flash (LMA) to RAM (VMA), zero the .bss region, then (set up FPU/clocks/C++ constructors) and finally call main().
+Who actually makes int x = 5 equal 5 and int y equal 0 at startup?;The startup code: copying .data from flash gives x its 5, and zeroing .bss gives y its 0. C guarantees statics start at zero, and the reset handler is who does it.
+Why are bad startup/linker bugs so maddening?;Initialised globals contain garbage and zero-init globals are nonzero, yet the program may seem to run. The C standard promised the initialisation, so the failure is invisible in the source.
+How do you place a variable in a custom section?;__attribute__((section("..."))) on the symbol, with the linker script mapping that section — e.g. a buffer in fast CCM RAM, or a NOINIT/.noinit variable the startup code is told not to zero so it survives a warm reset.

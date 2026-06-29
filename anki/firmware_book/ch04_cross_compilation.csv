@@ -1,0 +1,15 @@
+#separator:Semicolon
+#html:false
+What is cross-compilation?;Building on a powerful host PC a program that runs on a different target (a chip with a different instruction set, no OS, and no compiler of its own).
+Two reasons you cannot just compile on the target.;Different instruction set (PC gcc emits x86-64, which an ARM core cannot execute) and no resources on the target (kilobytes of RAM, no file system, OS, or editor to host a build).
+What is a cross-toolchain?;A build of GCC that runs on the host (e.g. x86-64 Linux) but emits code for the target (e.g. ARM Cortex-M).
+Define the GNU build, host, and target machines.;Build = the machine where the toolchain itself was compiled. Host = the machine where the toolchain runs (your PC). Target = the machine the produced code runs on (the MCU). For a cross-compiler, host ≠ target.
+What do the fields of arm-none-eabi mean?;arm = target architecture is ARM, none = no specific vendor, eabi = Embedded Application Binary Interface, i.e. there is no operating system.
+Why is the C library for arm-none-eabi called newlib?;Because none means no OS, so its libc is newlib (or newlib-nano), a small library designed for systems with no OS, rather than the desktop glibc.
+What do the Cortex-M build flags -mcpu, -mthumb, -mfpu, -mfloat-abi do?;-mcpu names the exact core, -mthumb selects the Thumb instruction set (the only one Cortex-M supports), -mfpu targets the hardware FPU, -mfloat-abi=hard passes floats in FPU registers (vs soft, which emulates floats in software).
+Why can a wrong -mfloat-abi cause a link error?;Hard- and soft-float objects use different calling conventions and cannot be mixed, so mismatched float-ABI objects fail to link.
+What scaffolding must you supply on bare metal that an OS normally provides?;Startup code (sets the stack pointer, copies .data flash→RAM, zeroes .bss, calls main), a linker script (.ld giving flash/RAM addresses and section placement), and system-call stubs (e.g. retarget _write to a UART, or use --specs=nosys.specs).
+Why does objcopy turn the .elf into a .bin or .hex?;The .elf is rich with debug info and section metadata for the debugger, not what a flash programmer wants. objcopy -O binary gives the raw flash contents, -O ihex gives Intel HEX (address+data records).
+In a cross build, what feeds the debugger versus the flash programmer?;The single .elf feeds the debugger (it carries symbols and line numbers), while objcopy strips it to a .bin/.hex for the flash programmer.
+What do -ffunction-sections -fdata-sections plus -Wl,--gc-sections achieve?;Putting each function and variable in its own section lets the linker garbage-collect anything unused — a standard trio for shrinking the image.
+Why won't a natively-compiled .bin run on the MCU?;Wrong ISA (native gcc emits x86-64, the ARM core executes garbage) and wrong layout/no startup (no vector table at 0x08000000, no reset handler, no flash-to-RAM copy). Cross-compilation is about both the instruction set and the runtime environment.

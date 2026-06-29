@@ -1,0 +1,14 @@
+#separator:Semicolon
+#html:false
+What is memory-mapped I/O?;A slab of the address space is connected not to memory cells but to peripheral logic, so a load/store to those magic addresses controls hardware directly (drive a pin, set a baud rate, start a conversion). No special port instructions — just loads and stores.
+What is the Cortex-M address space?;A single flat 32-bit space (4 GB, 0x00000000-0xFFFFFFFF). Most is empty, but specific ranges are wired to flash/code, SRAM, and peripherals (the peripheral band around 0x40000000).
+What is a data register?;Carries the payload through the peripheral — the byte you transmit on a UART, the sample the ADC produced. Read and/or write.
+What is a status register?;Reports the peripheral's current state (transmit buffer empty, conversion complete, error). Typically read-only and changed by the hardware — the const volatile case.
+What is a control/configuration register?;Holds the settings you program — enable the peripheral, pick a baud rate, set an interrupt-enable bit. Read/write.
+What is the typical driver loop in terms of register types?;Configure (control register), wait on a flag (status register), move the payload (data register) — e.g. set baud (CR), wait for TXE (SR), write the byte (DR).
+Why manipulate register bits with masks instead of whole-register writes?;A 32-bit register packs many independent fields, so overwriting the whole register clobbers the others. Use REG |= mask to set, REG &= ~mask to clear, REG & flag to test, leaving other fields alone.
+Why is a read-modify-write on a register not safe with interrupts?;|= and &= are not atomic and can race an ISR that also touches the register. Beware also write-1-to-clear status bits, where a blind SR |= x can clear flags you did not mean to — always read the bit's access type in the datasheet.
+What is the typedef-struct overlay trick?;Describe a peripheral's consecutive registers once as a struct of volatile words whose field offsets match the datasheet, then cast the base address to a pointer to that struct. Field access compiles to exactly the right load/store at base+offset.
+In the struct overlay, why is each field volatile and the input register const?;volatile because the hardware changes the registers (so the compiler re-reads/re-writes), and const on a read-only input register (e.g. GPIO IDR) — the exact const volatile pattern.
+What does GPIOA->ODR = 0x20 actually do?;Writes 0x20 to base + offset of ODR (e.g. 0x40020000 + 0x14), the output-data register, because ODR is the struct field at that offset. The compiler does the offset arithmetic, so you write readable names.
+What is the BSRR register for?;Atomic bit set/reset of GPIO pins — write a 1 to the right half-word to set or clear a single pin without the read-modify-write race that ODR has.

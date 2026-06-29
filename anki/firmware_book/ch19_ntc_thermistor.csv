@@ -1,0 +1,14 @@
+#separator:Semicolon
+#html:false
+What two steps read an analog resistive sensor with an MCU?;Convert the resistance into a voltage the ADC can sample (a divider), then convert the digitised voltage back into engineering units in firmware (invert the model).
+What is an NTC thermistor?;A Negative Temperature Coefficient resistor — its resistance falls as temperature rises. The relationship is strongly nonlinear (roughly exponential), giving high sensitivity but needing model inversion.
+What is the Beta (β) equation for an NTC?;R(T) = R0·exp[β(1/T − 1/T0)], with T in kelvin and R0 the known resistance at reference T0 (usually 25°C = 298.15 K). Rearranged: 1/T = 1/T0 + (1/β)·ln(R/R0) — the form firmware uses to get T from R.
+What is the Steinhart-Hart equation?;A more accurate three-coefficient NTC model, 1/T = A + B·ln R + C·(ln R)³. The β equation is enough to understand the principle but Steinhart-Hart is used for higher accuracy.
+How does a voltage divider read the NTC?;Put the NTC in series with a fixed resistor Rs across the supply and tap the midpoint. With the NTC on the bottom leg, V_out = Vcc·R_NTC/(Rs+R_NTC), so R_NTC = Rs·V_out/(Vcc−V_out).
+What is the ratiometric trick, and why is it robust?;If the ADC's reference is Vcc, the code = Nmax·V_out/Vcc, so Vcc cancels: R_NTC = Rs·code/(Nmax−code). Supply variation no longer affects the reading — you never even need to know Vcc accurately.
+What are the three steps of the NTC firmware chain?;Sample the ADC for code in [0, Nmax] (12-bit: 4095), recover resistance R_NTC = Rs·code/(Nmax−code), then recover temperature via the inverted β model.
+Why pick Rs near R_NTC at your target temperature?;Divider sensitivity (∂V_out/∂R) is greatest when the two resistances are comparable, so Rs ≈ R0 maximises resolution around the temperature you care about (e.g. room temperature).
+What is self-heating in an NTC, and how do you limit it?;Current through the NTC dissipates power (P = V²/R) and warms it, so the sensor reads high. Keep the divider current low (larger resistors), or sample briefly and power the divider only during conversion.
+Why linearise or use a lookup table for an NTC?;The curve is so nonlinear that resolution varies across the range. A lookup table or piecewise linearisation around the region of interest often beats evaluating the full equation, and is mandatory without an FPU (avoids logf).
+Why filter ADC readings before inverting the NTC model?;ADC readings are noisy and the nonlinearity amplifies noise unevenly, so average several samples (or run a simple IIR filter) before applying the inverse model.
+Simpler fix than a precision reference when a sagging Vcc drifts the NTC reading?;Drive the divider from the same node that is the ADC reference (Vref = Vcc) — i.e. read ratiometrically. Vcc then appears in both the divider output and the reference and cancels, so supply sag no longer matters and no extra reference chip is needed.

@@ -1,0 +1,253 @@
+%=======================================================================
+%  IESE EXERCISE BOOK 1 -- MEASUREMENTS AND INSTRUMENTS
+%  Problems to work on (no worked method); answers at the back.
+%  Companion to iese01_measurements_manual.tex.
+%=======================================================================
+\documentclass[11pt,a4paper,oneside]{book}
+\usepackage{iese_manual}
+
+\hypersetup{pdftitle={IESE Exercise Book 1 -- Measurements}}
+
+% answer-key helper: \ans{2.1} bold tag + hanging entry
+\newcommand{\ans}[1]{\par\smallskip\noindent\textbf{#1}\quad\ignorespaces}
+
+\begin{document}
+\frontmatter
+
+\begingroup
+\thispagestyle{empty}\centering
+\vspace*{2.2cm}
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[0.5cm]
+{\Huge\bfseries\color{accent} Measurements \& Instruments}\\[0.35cm]
+{\LARGE Exercise Book}\\[0.4cm]
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[1.2cm]
+{\large IESE Exercise Book 1 of 3}\\[1.6cm]
+{\footnotesize Problems only --- attempt them first; answers (final results, no
+worked steps) are at the back.}
+\par\vspace*{\fill}
+\endgroup
+\clearpage
+
+\chapter*{How to use this book}
+\addcontentsline{toc}{chapter}{How to use this book}
+\markboth{How to use this book}{How to use this book}
+
+This is the problem set distilled from the \emph{Measurements \& Instruments}
+solving manual. It contains \textbf{only exercises and their answers} --- no
+theory and no worked derivations. Each chapter mirrors a chapter of the manual,
+so when you are stuck on a \emph{method}, open the manual at the same chapter and
+read its Protocol and Worked Example.
+
+\begin{keyidea}
+Work each exercise to a number \emph{with its unit and uncertainty} before
+turning to Chapter~\ref{ch:answers}. The answer key gives only the final
+result, so it confirms \emph{what} you should get, never \emph{how} --- that is
+the point of working it yourself.
+\end{keyidea}
+
+\tableofcontents
+\clearpage
+\mainmatter
+
+%=======================================================================
+\chapter{Measurements and the SI system}
+%=======================================================================
+
+\begin{exercise}[Direct or indirect?]
+Classify each as a \emph{direct} or \emph{indirect} method, and name the
+quantities whose uncertainty enters the result:
+(a)~timing $10$ pendulum swings with a stopwatch to get one period;
+(b)~measuring a temperature with a calibrated thermometer;
+(c)~finding the input resistance of an amplifier from the divider
+$V_M=V_S\,R_{in}/(R+R_{in})$.
+\end{exercise}
+
+\begin{exercise}[Same resistor, two methods]
+A \qty{50.0}{\ohm} resistor is read both on a DMM set to ``\si{\ohm}'' and by
+computing $R=V/I$ from separate $V$ and $I$ readings.
+(a)~Which method is direct, which indirect?
+(b)~For each, state what makes the result traceable or what uncertainties
+combine.
+\end{exercise}
+
+%=======================================================================
+\chapter{Measurements and uncertainty}
+%=======================================================================
+
+\begin{exercise}[The four basic rules]
+Take $a=(15\pm0.5)\,\unit{\centi\meter}$ and $b=(10\pm0.5)\,\unit{\centi\meter}$.
+Give the value and the relative uncertainty of
+(a)~the sum $a+b$; (b)~the difference $a-b$; (c)~the product of two
+$(10\pm0.5)\,\unit{\centi\meter}$ lengths; (d)~the ratio of two
+$(10\pm0.5)\,\unit{\centi\meter}$ lengths.
+\end{exercise}
+
+\begin{exercise}[A near cancellation]
+$c=(22\pm0.5)\,\unit{\centi\meter}$ and $d=(21\pm0.5)\,\unit{\centi\meter}$.
+Find $z=c-d$ with its absolute and relative uncertainty.
+\end{exercise}
+
+\begin{exercise}[A worse one]
+$a=\qty{10.00(2)}{\centi\meter}$, $b=\qty{9.95(2)}{\centi\meter}$. Find
+$y=1/(a-b)$ with its absolute and relative uncertainty.
+\end{exercise}
+
+\begin{exercise}[Powers count twice]
+A resistor's dissipation is computed as $P=V^2/R$ from
+$V=(10.0\pm0.2)\,\unit{\volt}$ and $R=(50\pm0.5)\,\unit{\ohm}$.
+(a)~Find $P$, $\Delta P$ and $\varepsilon_P$.
+(b)~Which reading should you improve first?
+\end{exercise}
+
+%=======================================================================
+\chapter{The analog oscilloscope}
+%=======================================================================
+
+\begin{exercise}[Placing the spot]
+Where does the spot sit for $V_x=\qty{-2}{\volt}$, $V_y=\qty{1.5}{\volt}$ with
+$K_x=\qty{0.5}{\volt\per\division}$, $K_y=\qty{1}{\volt\per\division}$?
+\end{exercise}
+
+\begin{exercise}[Choosing the scales]
+A signal swings between $V_{min}=\qty{-0.2}{\volt}$ and $V_{max}=\qty{1.0}{\volt}$
+at $f=\qty{2}{\kilo\hertz}$, and you want at least $N=3$ periods on screen.
+(a)~Pick the vertical scale (8 divisions, 1--2--5 sequence).
+(b)~Pick the horizontal scale (12 divisions) and count the periods displayed.
+(c)~What goes wrong with \qty{100}{\micro\second\per\division}?
+\end{exercise}
+
+\begin{exercise}[Reading uncertainty: $V_{pp}$]
+$K_y=\qty{0.5}{\volt\per\division}$ with $\varepsilon_{K_y}=\qty{2}{\percent}$;
+the trace spans $L=\qty{4}{\division}$ read to $\delta L=\qty{0.2}{\division}$.
+Find $V_{pp}$ and its relative and absolute uncertainty.
+\end{exercise}
+
+\begin{exercise}[Reading uncertainty: period and frequency]
+With $K_T=\qty{10}{\micro\second\per\division}$
+($\varepsilon_{K_T}=\qty{2}{\percent}$) one period spans
+$L=(5.0\pm0.1)\,\unit{\division}$.
+(a)~Find $T$ and $f=1/T$ with their uncertainties.
+(b)~On \qty{20}{\micro\second\per\division}, four periods span
+$(10.0\pm0.1)\,\unit{\division}$: redo $\varepsilon_T$ and say why it improved.
+\end{exercise}
+
+%=======================================================================
+\chapter{The digital oscilloscope}
+%=======================================================================
+
+\begin{exercise}[Predicting an aliased trace]
+A DSO samples at $f_S=\qty{1}{\mega\sps}$; the input is a sine at
+$f_{in}=\qty{800}{\kilo\hertz}$.
+(a)~What frequency does the screen show?
+(b)~What $f_S$ (linear interpolator, ${\sim}10$ points/period) would display the
+real signal acceptably?
+\end{exercise}
+
+\begin{exercise}[Two inputs, one trace]
+A DSO samples at $f_S=\qty{50}{\mega\sps}$.
+(a)~What does it display for a \qty{49}{\mega\hertz} sine?
+(b)~And for a \qty{51}{\mega\hertz} sine --- can the two inputs be told apart?
+(c)~What minimum $f_S$ would you pick to view a \qty{2}{\mega\hertz} sine with a
+linear interpolator?
+\end{exercise}
+
+\begin{exercise}[Rise time near the scope's limit]
+$B=\qty{100}{\mega\hertz}$ ($\pm\qty{10}{\percent}$), so the scope's own rise time
+is $T_B=0.35/B$. On $K_x=\qty{1}{\nano\second\per\division}$ the edge reads
+$N_{div}=4.5$ (so $T_{meas}=\qty{4.5}{\nano\second}$).
+Find $T_{Rise}$ and comment on its uncertainty.
+\end{exercise}
+
+%=======================================================================
+\chapter{The digital multimeter}
+%=======================================================================
+
+\begin{exercise}[When do you need 4 wires?]
+Ordinary leads, $R_c=\qty{0.1}{\ohm}$ each.
+(a)~What is the 2-wire error for $R_x=\qty{100}{\ohm}$?
+(b)~Below which $R_x$ does the 2-wire error exceed \qty{1}{\percent}?
+\end{exercise}
+
+\begin{exercise}[Square wave on a sine-calibrated meter]
+An average-sensing meter, calibrated for sines ($\times1.11$), is given a
+\qty{10}{\volt} peak \emph{square} wave. What does it display, and what is the
+true RMS?
+\end{exercise}
+
+\begin{exercise}[Sine plus offset]
+$v(t)=1.5\sin\omega t+2$ (in volts). Find the true RMS value.
+\end{exercise}
+
+%=======================================================================
+\chapter{Laboratory: Bench measurements}
+%=======================================================================
+
+\begin{exercise}[Sample rate from the dots]
+In dots mode, $60$ dots span $12$ divisions at
+\qty{5}{\nano\second\per\division} on CH1 alone.
+(a)~Find the sample period $T_s$ and rate $f_s$.
+(b)~What is $f_s$ once CH2 is also enabled?
+\end{exercise}
+
+%=======================================================================
+\chapter{Answers}\label{ch:answers}
+%=======================================================================
+
+Final results only --- if your method is shaky, the matching chapter of the
+\emph{manual} shows how each is obtained.
+
+\section*{Chapter 1 --- Measurements and the SI system}
+\ans{1.1}(a)~Indirect ($T=t_{10}/10$; only $t_{10}$ carries uncertainty).
+(b)~Direct (traceable via the thermometer's calibration).
+(c)~Indirect ($R_{in}=V_M R/(V_S-V_M)$; depends on $V_M$, $V_S$ and the known
+$R$).
+\ans{1.2}(a)~The DMM is \emph{direct}; $R=V/I$ is \emph{indirect}.
+(b)~DMM: traceable only if its calibration is current. $V/I$: relative
+uncertainties add, $\varepsilon_R=\varepsilon_V+\varepsilon_I$.
+
+\section*{Chapter 2 --- Measurements and uncertainty}
+\ans{2.1}(a)~$25\pm1\,\unit{\centi\meter}$, $\varepsilon=\qty{4}{\percent}$.
+(b)~$5\pm1\,\unit{\centi\meter}$, $\varepsilon=\qty{20}{\percent}$.
+(c)~$100\pm10\,\unit{\centi\meter\squared}$, $\varepsilon=\qty{10}{\percent}$.
+(d)~$1.0\pm0.1$, $\varepsilon=\qty{10}{\percent}$.
+\ans{2.2}$z=\qty{1}{\centi\meter}$, $\Delta z=\qty{1}{\centi\meter}$,
+$\varepsilon_z=\qty{100}{\percent}$.
+\ans{2.3}$y=\qty{20}{\per\centi\meter}$, $\Delta y=\qty{16}{\per\centi\meter}$,
+$\varepsilon_y=\qty{80}{\percent}$.
+\ans{2.4}(a)~$P=(2.00\pm0.10)\,\unit{\watt}$, $\varepsilon_P=\qty{5}{\percent}$.
+(b)~The \emph{voltage} (it counts twice: $\varepsilon_P=2\varepsilon_V+\varepsilon_R$).
+
+\section*{Chapter 3 --- The analog oscilloscope}
+\ans{3.1}$x=-4\,\unit{\division}$, $y=1.5\,\unit{\division}$ (top-left quadrant).
+\ans{3.2}(a)~$K_y=\qty{0.2}{\volt\per\division}$.
+(b)~$K_x=\qty{200}{\micro\second\per\division}$, showing $\approx4.8$ periods.
+(c)~\qty{100}{\micro\second\per\division} shows only $2.4$ periods --- fewer than
+the $3$ requested.
+\ans{3.3}$V_{pp}=\qty{2.00(14)}{\volt}$, $\varepsilon_{V_{pp}}=\qty{7}{\percent}$.
+\ans{3.4}(a)~$T=(50\pm2)\,\unit{\micro\second}$ ($\varepsilon_T=\qty{4}{\percent}$),
+$f=(20.0\pm0.8)\,\unit{\kilo\hertz}$.
+(b)~$\varepsilon_T=\qty{3}{\percent}$ --- spreading the reading over four periods
+divides the reading error by four.
+
+\section*{Chapter 4 --- The digital oscilloscope}
+\ans{4.1}(a)~A clean \qty{200}{\kilo\hertz} sine (aliased).
+(b)~$f_S\approx\qty{8}{\mega\sps}$.
+\ans{4.2}(a)~A \qty{1}{\mega\hertz} trace.
+(b)~Also \qty{1}{\mega\hertz} --- the two inputs are \emph{indistinguishable}.
+(c)~$f_S\ge\qty{20}{\mega\sps}$.
+\ans{4.3}$T_B=\qty{3.5}{\nano\second}$,
+$T_{Rise}=\sqrt{4.5^2-3.5^2}=\qty{2.83}{\nano\second}$, but
+$\varepsilon_{T_{Rise}}\approx\qty{32}{\percent}$ (near-cancellation --- use a
+faster scope).
+
+\section*{Chapter 5 --- The digital multimeter}
+\ans{5.1}(a)~$R_{meas}=\qty{100.2}{\ohm}$, error \qty{0.2}{\percent}.
+(b)~$R_x<\qty{20}{\ohm}$.
+\ans{5.2}Displays $\qty{11.1}{\volt}$ (wrong); true RMS $=\qty{10}{\volt}$.
+\ans{5.3}$V_{RMS}=\sqrt{1.06^2+2^2}=\qty{2.26}{\volt}$.
+
+\section*{Chapter 6 --- Laboratory: Bench measurements}
+\ans{6.1}(a)~$T_s=\qty{1}{\nano\second}$, $f_s=\qty{1}{\giga\sps}$.
+(b)~$f_s=\qty{500}{\mega\sps}$ (one ADC shared between channels).
+
+\end{document}

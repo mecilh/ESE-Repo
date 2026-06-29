@@ -1,0 +1,18 @@
+#separator:Semicolon
+#html:false
+What is MISRA C?;A defensive subset of C codifying coding rules for safety-critical, field-deployed firmware, where the cost of a latent defect is far higher than on a PC.
+What is the unifying principle behind the avoid rules?;Prefer code whose behaviour and resource use you can determine by reading it, without running it. Each rule removes a way for the program to do something surprising.
+Why always use braces, even on one-line blocks?;Without braces, indentation can lie about which statements an if controls. The Apple goto fail TLS bug (a duplicated unguarded goto) skipped every security check — mandatory braces make that impossible to write by accident.
+Why ban unlimited recursion?;Each recursive call adds a stack frame, so recursion whose depth depends on input is a stack overflow waiting to happen — and with no MMU it corrupts other RAM silently. Iteration uses one frame regardless of n.
+When is recursion tolerated in embedded code?;Only when the depth is bounded by a small compile-time constant (e.g. traversing a balanced tree of known maximum height).
+Why prefer static allocation over malloc/free?;The static version cannot fragment, cannot return NULL, costs zero run-time allocation, and its footprint is verified by the linker.
+Why prefer indexes to pointers for array traversal?;The loop variable is checkable against n (natural bounds check, obvious intent), it avoids pointer arithmetic (a source of undefined behaviour), and it reads as the i-th element. It is a readability/safety preference, not a speed claim.
+Why use fixed-width types like uint32_t?;The widths of int/long vary by platform, but register fields and protocol formats are defined in exact bits — so use uint32_t, int16_t, etc.
+Why initialise every variable at declaration?;Reading an uninitialised automatic is undefined behaviour, and there is no OS to zero it for you.
+What is the integer-promotion trap with small unsigned types?;uint8_t a=250 and b=10, so a+b promotes to int, giving 260 not 4. And comparing a signed with an unsigned value silently converts the signed one — both cause real bugs.
+Why parenthesise macro parameters and bodies?;Without them, text substitution misgroups: #define SQ(x) x*x makes SQ(a+b) expand to a+b*a+b. Use ((x)*(x)), or better a static inline function which is type-safe and evaluates arguments once.
+How do you guard against the if (x = 5) typo?;Write constants on the left (if (5 == x)) so an accidental single = (assignment) fails to compile instead of silently assigning.
+What is the only tolerated use of goto?;Jumping forward to a common cleanup label for error handling — never backwards, never into a block.
+Why avoid variable-length arrays (VLAs)?;int buf[n] with runtime n silently allocates an unbounded amount of stack — the recursion/stack-overflow hazard in disguise.
+Why does a backward size_t loop with condition i >= 0 never terminate?;size_t is unsigned, so i >= 0 is always true. When i is 0 and decrements it wraps to SIZE_MAX, so the loop continues and a[SIZE_MAX] writes far out of bounds. Fix: count up, or use while(i-- > 0).
+Why avoid magic numbers?;Bare literals like 4095 sprinkled through code hide intent and invite mismatched edits. Use a named #define ADC_MAX 4095u or an enum.

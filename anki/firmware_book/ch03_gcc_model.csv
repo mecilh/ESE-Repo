@@ -1,0 +1,16 @@
+#separator:Semicolon
+#html:false
+What is gcc, really?;Not a compiler but a driver that runs four tools in sequence — the preprocessor, the compiler proper, the assembler, and the linker. You can stop the pipeline anywhere and inspect the intermediate.
+Name the four stages of the GCC pipeline and their files.;Preprocess (cpp) .c→.i, Compile (cc1) .i→.s assembly, Assemble (as) .s→.o object, Link (ld) .o + libs → .elf executable.
+What does the preprocessor (cpp) do?;Pure text substitution before any C is understood: pastes in #included files, expands #define macros, resolves conditional compilation (#if/#ifdef), and strips comments. Output is flattened C.
+How do you stop after preprocessing?;gcc -E main.c -o main.i — the .i file shows thousands of lines from the headers inlined above your own code.
+What does the compiler proper (cc1) produce?;It parses the preprocessed C, type-checks, optimises, and emits assembly for the target architecture (human-readable but architecture-specific). Stop with gcc -S.
+Why read the .s assembly output?;Reading main.s, especially with and without -O2, is the single best way to learn what your C really costs.
+What does the assembler (as) produce?;A relocatable object file (.o) of machine code. Relocatable means addresses are not final — it refers to functions by name, not address, because it does not yet know where they will live. Stop with gcc -c.
+What does an object (.o) file contain?;It is an ELF file holding sections (.text for code, .data, ...), a symbol table (names it defines and needs), and relocation entries (places to patch once addresses are known).
+What four things does the linker (ld) do?;Merges sections of the same kind from every object, resolves symbols (matching each use to one definition, else undefined reference), assigns final addresses per the linker script, and relocates (patches placeholder addresses).
+What does an undefined reference error mean?;The linker found a symbol that is used but never defined anywhere — every used symbol (nm shows it as U) must be matched by exactly one definition at link time.
+What does the binutils tool objdump -d do?;Disassembles executable sections — turns machine code back into assembly. With -S it interleaves the C source (needs -g), with -h it shows section headers (sizes, VMA/LMA), with -t the symbol table.
+What does nm show, and its letter codes?;The symbols compactly: T = text (code), D = data, B = bss, U = undefined (used but not defined here).
+What does the size tool report?;The bottom line of bytes in .text, .data and .bss. text+data must fit in flash, while data+bss must fit in SRAM.
+What do nm's symbol letters T, D, B, U mean?;T = defined in text (code), D = defined in data, B = defined in bss, U = undefined external reference that the linker must resolve.

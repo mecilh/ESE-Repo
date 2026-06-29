@@ -1,0 +1,13 @@
+#separator:Semicolon
+#html:false
+Why does a switch dissipate power at all?;A real switch is never perfect — it drops a little voltage while carrying current, so it dissipates power and heats up. Get the numbers wrong and the transistor cooks.
+What are a MOSFET's two loss mechanisms?;Conduction loss (while fully on it is a small resistor R_DS(on), burning P_cond = I_load²·R_DS(on), dominant at high current/low frequency) and switching loss (each transition passes through a region with both voltage and current).
+What is the MOSFET conduction-loss formula?;P_cond = I_load²·R_DS(on). The I² dependence means current, not voltage, is what bites you — doubling the current quadruples the loss.
+What is the MOSFET switching-loss formula?;P_sw ≈ ½·V·I·(t_on + t_off)·f, where each transition costs roughly ½·V·I·t_sw of energy. It dominates at high switching frequency and is what slew-rate control trades against EMI.
+What is the BJT switch loss?;P_BJT ≈ V_CE(sat)·I_C + V_BE·I_B — the saturation drop (typically 0.1-0.3 V) times the collector current, plus a smaller base-drive loss.
+How does a BJT's conduction drop differ from a MOSFET's?;The BJT's drop is a roughly constant voltage V_CE(sat), whereas the MOSFET's is resistive (I·R_DS(on)). At low currents the MOSFET (tiny I·R_DS) usually wins, and the BJT also needs continuous base current to stay on while the MOSFET (voltage-controlled) does not.
+What is the thermal check inequality?;T_j = T_amb + P_total·R_th(j-a) < T_j(max). The junction-to-ambient thermal resistance R_th (in °C/W) turns dissipated power into a temperature rise, and it decides whether you need a bigger device, a heatsink, or more copper.
+What are the three steps to size an NPN base resistor?;1) Find the load (collector) current I_C. 2) Choose a forced beta (10-20) and compute I_B = I_C/β_forced. 3) Size R_B = (V_drive − V_BE(sat))/I_B.
+Why pick a deliberately low forced beta of 10-20?;To overdrive the base and guarantee deep saturation despite the device's minimum β and temperature variation, so V_CE(sat) stays low and the BJT behaves like a closed switch.
+What is the reality check that catches everyone in base-resistor sizing?;Whether the GPIO can actually source/sink the required I_B. A typical STM32 pin sources only 8-20 mA, so a design needing e.g. 50 mA cannot be driven — the pin sags, the BJT leaves saturation, and both overheat. Verify against the pin and aggregate port limits.
+What is the better alternative to a high-base-current BJT switch?;A logic-level MOSFET — voltage-controlled, drawing essentially zero steady gate current, so a weak GPIO can fully turn it on. This is a big reason MOSFETs have largely displaced BJTs for switching (or use a Darlington/gate-driver stage).

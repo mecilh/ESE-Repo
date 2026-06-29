@@ -1,0 +1,13 @@
+#separator:Semicolon
+#html:false
+In one line each, what are const and volatile?;const is a promise you make to the compiler (I will not write through this). volatile is a warning the compiler makes to itself (this may change behind my back). They are not opposites.
+What does const tell the compiler?;That a value will not be modified through this lvalue. Payoffs: an accidental write becomes a compile error, and a const object with static storage can live in .rodata (flash) instead of RAM.
+How does const save RAM?;A const static object lands in .rodata, i.e. flash, costing zero RAM. Drop the const and the same array moves to .data, wasting SRAM and still storing the init values in flash to copy at boot.
+How do you read pointer const declarations?;Right to left, from the variable name outward. const int *p = pointer to const int (*p read-only, p movable). int * const p = const pointer to int (p fixed, *p writable). const int * const p = neither can change.
+What does volatile do to accesses of an object?;It switches off the optimiser's caching/eliding/reordering for that object: every access in the source becomes a real memory access, in program order, none elided.
+What three situations require volatile?;Memory-mapped peripheral registers (hardware changes them), variables shared with an ISR (changed asynchronously), and variables shared with another execution context such as a DMA buffer or a second core.
+Why is volatile NOT a synchronisation primitive?;It guarantees the access happens and is not optimised away, but says nothing about atomicity or ordering relative to other variables. A 32-bit volatile on an 8-bit CPU still tears. Volatile means re-read me, not protect me.
+What is the vanishing-poll bug?;Polling a hardware register without volatile: the compiler reasons *SR is not modified in the loop so reads it once into a register and loops on that stale copy forever, even after the hardware set the bit. Declaring the location volatile re-reads it each time.
+Why must an empty delay loop use volatile?;Without volatile the optimiser deletes the empty loop entirely (it has no observable effect). volatile forces the iterations to actually occur — though a hardware timer is preferable to a calibrated busy-loop.
+When do you need const volatile together?;A read-only status register: you must never write it (const) but it changes on its own (volatile). Both qualifiers apply — writing it is a compile error, every read fetches the live value.
+Is a loop counter local to a function at -O2 a candidate for volatile?;No — it is private to one function and changes only through the program. volatile would just pessimise it by forcing needless memory traffic.

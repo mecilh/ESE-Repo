@@ -1,0 +1,17 @@
+#separator:Semicolon
+#html:false
+What do SPI and I2C have in common?;Both are synchronous short-range buses (a clock line tells the receiver when to sample, unlike the clock-less async UART), both are built into every STM32, and choosing between them is a routine design decision.
+What are SPI's four wires?;SCLK (clock from the controller), MOSI (controller out, peripheral in), MISO (controller in, peripheral out), and CS (chip select, one per peripheral, active-low).
+How does SPI select a device and exchange data?;No addressing and no acknowledgement — the controller pulls a device's CS low, then clocks bits. Internally two shift registers form a ring, so each clock edge sends a bit on MOSI and receives one on MISO — a transfer is inherently an exchange (to read, you also write, often dummy bytes).
+What are CPOL and CPHA in SPI?;Clock Polarity (idle clock high or low) and Clock Phase (sample on the first or second edge). They define the four SPI modes (0-3), and controller and peripheral must agree or you read garbage — a mismatched mode is the classic SPI returns 0x00 or 0xFF bring-up bug.
+What are I2C's two wires?;SDA (serial data, bidirectional) and SCL (serial clock, driven by the controller) — shared by every device on the bus.
+Why are I2C lines open-drain with pull-ups?;A device can only pull a line low or release it to float high, which lets many devices share the wires without conflict and enables acknowledgement and clock stretching.
+How does I2C select a device?;There is no chip-select line, so each peripheral has a 7-bit address, and the controller broadcasts the address and only the matching device responds.
+How is an I2C transaction framed?;START (SDA falls while SCL is high), then 7 address bits + 1 R/W direction bit, an ACK/NACK after each byte (the receiver pulls SDA low to ACK), data bytes, then STOP (SDA rises while SCL is high).
+What is I2C clock stretching?;A peripheral that needs more time holds SCL low, pausing the controller until it is ready.
+SPI vs I2C: wires, duplex, speed.;SPI = 3 wires + 1 CS per device, full-duplex, tens of MHz. I2C = 2 wires total, half-duplex, 100k/400k/1M Hz.
+SPI vs I2C: selection, acknowledgement, pull-ups.;SPI selects by a dedicated chip-select line, has no ACK, and needs no pull-ups. I2C selects by a 7-bit address on the bus, has a per-byte ACK/NACK, and needs pull-ups (open-drain).
+When choose SPI versus I2C?;SPI for raw speed and full-duplex streaming (SD cards, displays, high-rate ADCs), accepting an extra wire per device. I2C when pins are scarce and you have many slow-ish devices, accepting lower speed and a fussier protocol.
+How do SPI/I2C appear inside the STM32?;Just more memory-mapped peripherals: control registers for mode/speed, status flags (TX empty, RX not empty, busy), and a data register. They support interrupts and DMA, with HAL wrappers (HAL_SPI_TransmitReceive, HAL_I2C_Mem_Read) and LL for tight ISRs.
+What is the STM32 HAL I2C address-shift gotcha?;The HAL wants the 7-bit address shifted left by one (leaving room for the R/W bit), so a device at 0x50 is passed as 0xA0 — a perennial source of device not responding confusion.
+Why is connecting eight identical parts a problem on I2C, and how is it solved?;I2C selects devices by address, so eight identical parts share one default address and collide. Solved with parts that expose address-select pins (strap each to a unique address), a family offering several addresses, or an I2C multiplexer.

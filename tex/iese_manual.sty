@@ -1,0 +1,112 @@
+%=======================================================================
+%  iese_manual.sty -- shared style for the IESE solving manuals
+%  Cloned/adapted from FirmwareDesign_Book.tex preamble, plus a
+%  dedicated "Protocol" callout box. Load AFTER \documentclass{book}.
+%=======================================================================
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{iese_manual}[2026/06/06 IESE solving-manual house style]
+
+%---------------------------- ENCODING / FONTS -------------------------
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{lmodern}
+\RequirePackage[margin=2.4cm]{geometry}
+
+%---------------------------- MATH / UNITS -----------------------------
+\RequirePackage{amsmath,amssymb}
+\RequirePackage{mathtools}
+\RequirePackage{siunitx}
+\sisetup{per-mode=symbol, detect-weight=true, detect-family=true}
+\DeclareSIUnit\VA{VA}            % apparent power
+\DeclareSIUnit\var{var}          % reactive power
+\DeclareSIUnit\sample{Sa}
+\DeclareSIUnit\sps{Sa/s}
+\DeclareSIUnit\division{div}     % oscilloscope screen division (\volt\per\division)
+
+%---------------------------- GRAPHICS / CIRCUITS ----------------------
+\RequirePackage{graphicx}
+\RequirePackage{xcolor}
+\RequirePackage{tikz}
+\RequirePackage[siunitx,RPvoltages]{circuitikz}
+\RequirePackage{pgfplots}
+\usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric,fit,
+                backgrounds,decorations.pathreplacing,patterns,shapes.misc}
+\pgfplotsset{compat=1.18}
+
+%---------------------------- TABLES / LISTS ---------------------------
+\RequirePackage{booktabs}
+\RequirePackage{longtable}
+\RequirePackage{array}
+\RequirePackage{multirow}
+\RequirePackage{enumitem}
+\RequirePackage[most]{tcolorbox}
+
+%---------------------------- TYPOGRAPHY -------------------------------
+\RequirePackage{titlesec}
+\RequirePackage{fancyhdr}
+\RequirePackage{caption}
+\RequirePackage{microtype}
+\RequirePackage[hidelinks]{hyperref}
+\RequirePackage{bookmark}
+
+%---------------------------- COLOURS ----------------------------------
+\definecolor{accent}{RGB}{30,80,140}      % deep blue
+\definecolor{accent2}{RGB}{150,40,40}     % brick red
+\definecolor{boxblue}{rgb}{0.88,0.93,1.0}
+\definecolor{boxyellow}{rgb}{1.0,0.97,0.82}
+\definecolor{boxred}{rgb}{1.0,0.89,0.89}
+\definecolor{boxgreen}{rgb}{0.89,0.96,0.89}
+\definecolor{boxgray}{rgb}{0.95,0.95,0.95}
+
+%---------------------------- CALLOUT BOXES ----------------------------
+\newtcolorbox{keyidea}{enhanced,breakable,colback=boxblue,
+    colframe=accent,fonttitle=\bfseries,title=Key Idea,
+    boxrule=0.6pt,arc=2pt}
+\newtcolorbox{warning}{enhanced,breakable,colback=boxred,
+    colframe=red!55!black,fonttitle=\bfseries,title=Watch Out,
+    boxrule=0.6pt,arc=2pt}
+\newtcolorbox{note}{enhanced,breakable,colback=boxyellow,
+    colframe=orange!70!black,fonttitle=\bfseries,title=Note,
+    boxrule=0.6pt,arc=2pt}
+\newtcolorbox[auto counter,number within=chapter]{wexample}[1][]{%
+    enhanced,breakable,colback=boxgray,colframe=black!55,
+    fonttitle=\bfseries,coltitle=black,
+    title={Worked Example~\thetcbcounter\quad #1},boxrule=0.6pt,arc=2pt}
+\newtcolorbox[auto counter,number within=chapter]{exercise}[1][]{%
+    enhanced,breakable,colback=boxgreen,colframe=green!45!black,
+    fonttitle=\bfseries,title={Exercise~\thetcbcounter\quad #1},
+    boxrule=0.6pt,arc=2pt}
+\newtcolorbox{solution}{enhanced,breakable,colback=white,
+    colframe=black!35,fonttitle=\bfseries\itshape,title=Solution,
+    boxrule=0.5pt,arc=2pt}
+% --- The centrepiece: a reusable step-by-step solving recipe ----------
+\newtcolorbox[auto counter,number within=chapter]{protocol}[1][]{%
+    enhanced,breakable,colback=boxblue!55,colframe=accent,
+    fonttitle=\bfseries,coltitle=white,
+    title={Protocol~\thetcbcounter\quad #1},boxrule=0.7pt,arc=2pt}
+
+%---------------------------- HEADINGS ---------------------------------
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{accent}}
+  {\filright\Large\color{accent!65!black}\chaptertitlename\ \thechapter}
+  {1ex}{\vspace{0.4ex}\titlerule\vspace{1ex}\filright}
+\titlespacing*{\chapter}{0pt}{10pt}{24pt}
+\titleformat{\section}{\normalfont\Large\bfseries\color{accent!85!black}}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries\color{accent!70!black}}{\thesubsection}{0.6em}{}
+
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\nouppercase{\small\leftmark}}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+\setlength{\parskip}{5pt}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{3em}
+
+%---------------------------- CONVENIENCE ------------------------------
+\newcommand{\msref}[1]{}      % legacy cross-reference, now omitted
+\newcommand{\code}[1]{\texttt{#1}}
+\endinput

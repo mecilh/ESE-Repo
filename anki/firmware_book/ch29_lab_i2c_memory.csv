@@ -1,0 +1,8 @@
+#separator:Semicolon
+#html:false
+What does the I2C memory final project demonstrate?;Talking to an external I2C memory (an EEPROM-style device) through a tiny driver (memInit, memRead, memWrite) built on the HAL I2C API — a two-wire bus, a 7-bit device address, and read/write transactions framed by START/STOP.
+What is the sequence of an I2C memory read transaction?;START, send (device address + write) and the memory pointer, a repeated START, send (device address + read), clock out n bytes ACK-ing all but the last, then STOP. HAL packages this as a single mem transfer (HAL_I2C_Mem_Read).
+What is the I2C addressing trap in the HAL?;HAL wants the 7-bit address left-shifted by one (the low bit is R/W), so a device at 0x50 is passed as 0xA0. Forgetting the shift gives device not responding.
+What is the EEPROM page-write trap?;An EEPROM writes in fixed-size pages and ignores data past a page boundary — it wraps within the page rather than advancing. After a write it is also busy for a few milliseconds, so poll for ACK (or wait the spec'd time) before the next access.
+What goes wrong writing 20 bytes starting at address 10 of a 16-byte-page memory?;Bytes 10-15 fill the rest of page 0, then the device wraps within the same page and overwrites bytes 0-3 instead of advancing to page 1. Fix: have memWrite split the buffer at page boundaries, one transfer per page, ACK-polling between them.
+Why must you ACK-poll after an EEPROM write?;The device is internally busy completing the write cycle for a few milliseconds and will not respond, so ACK polling (or waiting the spec'd time) ensures the next access only happens once it is ready.

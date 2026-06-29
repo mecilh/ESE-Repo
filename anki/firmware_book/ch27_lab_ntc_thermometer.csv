@@ -1,0 +1,10 @@
+#separator:Semicolon
+#html:false
+What does the NTC-thermometer lab demonstrate?;The canonical multi-task pattern wrapped around the NTC divider: a periodic timer kicks off a measurement, an acquisition task reads the thermistor through the ADC and converts it, and a display task writes the LCD.
+What is the data flow of the NTC thermometer lab?;timer ISR sets FLAG_MEASURE → acquisition task starts the ADC(s) in interrupt mode → conversion-complete ISR sets FLAG_DRDY → compute T → put it on the display queue → display task.
+What is the rule of thumb for event flags versus queues?;Event flags signal that something happened, while queues carry data. The timer ISR only signals (a flag), the acquisition task does the slow ADC work, and a queue carries the result to the display.
+Why keep the interrupt and the work apart in the thermometer lab?;The timer ISR only signals an event flag, the acquisition task does the slow ADC conversion, and the display gets the result via a queue — keeping ISRs short and the heavy work in preemptible tasks.
+How does the lab convert resistance to temperature without an FPU?;It uses a lookup table of resistance per degree and interpolates — deterministic and cheap — rather than evaluating a logarithm on the MCU. Note the table is descending (resistance falls as temperature rises), which inverts the usual binary-search comparison.
+Why carry the temperature in tenths of a kelvin (fixed point)?;Integer math is exact and fast on a core whose FPU you may not want to pay for. Representing T as 10·T_C + 2732 keeps everything integer, and the display just splits the integer into digits.
+Why are the lab's queues depth 1 (latest value wins)?;For a live reading you never want a backlog of stale temperatures, so depth 1 keeps only the newest. The trade-off: a slow consumer silently drops samples — choose the depth on purpose.
+How does the acquisition task read Vcc ratiometrically?;It samples both the NTC voltage and a divided copy of Vcc, undoes the /2 divider on the reference, then computes resistance as r = v_ntc·R_REF/(v_cc − v_ntc) — so supply variation cancels.

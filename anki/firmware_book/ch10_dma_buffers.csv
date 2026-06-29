@@ -1,0 +1,16 @@
+#separator:Semicolon
+#html:false
+What is DMA?;Direct Memory Access — a controller that moves blocks of data to or from RAM without the CPU copying each byte, freeing the core to work or sleep while the transfer runs concurrently.
+How is a DMA controller programmed?;With a source address, a destination address, and a length. A peripheral event (ADC conversion done, UART ready) triggers it, it performs the transfer over the bus, and it optionally interrupts when finished.
+Why is a DMA buffer like ISR-shared data?;Because the transfer happens concurrently with the CPU, the buffer is shared mutable state between two masters — the same asynchrony hazard as an ISR, now in hardware.
+Trap 1: why must a DMA buffer live in reachable RAM?;Some fast RAM (Core-Coupled Memory, CCM/TCM) is wired directly to the core and not on the DMA controller's bus matrix. A buffer in CCM makes the transfer silently fail or fault — the DMA engine cannot see that address.
+Trap 2: what is the cache-coherency problem with DMA?;On cached cores (e.g. Cortex-M7) the CPU works through the D-cache while DMA talks to main RAM, so the two can disagree and one side reads stale data.
+Cache fix for a CPU-to-peripheral (TX) DMA transfer?;Clean (flush) the cache before starting the DMA, so the bytes you wrote reach RAM before the DMA reads them — otherwise the DMA sends stale data still sitting in the cache.
+Cache fix for a peripheral-to-CPU (RX) DMA transfer?;Invalidate the cache for that buffer after the DMA completes, forcing the CPU to re-read from RAM — otherwise the CPU reads its stale cached copy instead of the fresh DMA-written data.
+What is the robust alternative to manual cache clean/invalidate?;Mark the DMA buffer's region non-cacheable via the MPU, so CPU accesses bypass the cache entirely — slower per access, but impossible to get a coherency bug.
+Trap 3: what two alignment requirements apply to DMA buffers?;Transfer-width alignment (a 32-bit transfer wants a 4-byte-aligned buffer) and cache-line alignment (cache maintenance operates on whole lines, e.g. 32 bytes on Cortex-M7).
+Why must a DMA buffer not share a cache line with another variable?;Invalidating the line to refresh the buffer also discards the neighbour's freshly-written cached value, corrupting data you never DMA'd. So align the buffer to, and pad it to a multiple of, the cache-line size.
+How do you make a correctly placed, aligned DMA buffer?;Combine an alignment attribute (e.g. __attribute__((aligned(32)))) with a linker section placed in DMA-reachable, ideally non-cacheable RAM, sized to a whole number of cache lines.
+What is double buffering (ping-pong)?;The buffer holds two halves: while DMA fills half A, the CPU processes the just-filled half B. When DMA finishes A it interrupts, swaps, and fills B while the CPU works on A — a continuous stream with no gaps or tearing.
+Why must a DMA buffer never be a local array?;Its lifetime would end when the function returns while the DMA is still writing into that reclaimed stack space.
+Why does ADC-via-DMA work on an STM32F4 but break on an F7?;The F4 has no cache, the F7 has a D-cache. On the F7, after DMA writes new samples to RAM the CPU reads its stale cached copy. Fix: invalidate the cache for the buffer after the transfer, or place it in a non-cacheable MPU region.

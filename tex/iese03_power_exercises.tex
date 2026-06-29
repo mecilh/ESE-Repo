@@ -1,0 +1,242 @@
+%=======================================================================
+%  IESE EXERCISE BOOK 3 -- POWER SUPPLIES AND REGULATORS
+%  Problems to work on (no worked method); answers at the back.
+%  Companion to iese03_power_manual.tex.
+%=======================================================================
+\documentclass[11pt,a4paper,oneside]{book}
+\usepackage{iese_manual}
+
+\hypersetup{pdftitle={IESE Exercise Book 3 -- Power}}
+
+% answer-key helper
+\newcommand{\ans}[1]{\par\smallskip\noindent\textbf{#1}\quad\ignorespaces}
+
+\begin{document}
+\frontmatter
+
+\begingroup
+\thispagestyle{empty}\centering
+\vspace*{2.2cm}
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[0.5cm]
+{\Huge\bfseries\color{accent} Power Supplies \& Regulators}\\[0.35cm]
+{\LARGE Exercise Book}\\[0.4cm]
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[1.2cm]
+{\large IESE Exercise Book 3 of 3}\\[1.6cm]
+{\footnotesize Problems only --- attempt them first; answers (final results, no
+worked steps) are at the back.}
+\par\vspace*{\fill}
+\endgroup
+\clearpage
+
+\chapter*{How to use this book}
+\addcontentsline{toc}{chapter}{How to use this book}
+\markboth{How to use this book}{How to use this book}
+
+This is the problem set distilled from the \emph{Power Supplies \& Regulators}
+solving manual. It contains \textbf{only exercises and their answers} --- no
+theory and no worked derivations. Each chapter mirrors a chapter of the manual,
+so when you are stuck on a \emph{method}, open the manual at the same chapter and
+read its Protocol and Worked Example.
+
+\begin{keyidea}
+Sizing exercises run \emph{backwards}, from the load to the wall: fix the
+regulator's headroom first, then the ripple, then the diode drops, then the
+worst-case mains. The answer key gives the standard part/value reached at the
+end --- get there yourself before you look.
+\end{keyidea}
+
+\tableofcontents
+\clearpage
+\mainmatter
+
+%=======================================================================
+\chapter{Specifications: reading the data sheet}
+%=======================================================================
+
+\begin{exercise}[A datasheet line by line]
+A \qty{5}{\volt} regulator's table reads: $\Delta V_{out}=\qty{10}{\milli\volt}$
+for $I_{out}$ from \qty{5}{\milli\ampere} to \qty{1.5}{\ampere};
+$\Delta V_{out}=\qty{3}{\milli\volt}$ for $V_{in}$ from \qtyrange{8}{12}{\volt}.
+(a)~Load and line sensitivity, and the ripple rejection in dB.
+(b)~At $V_{in}=\qty{12}{\volt}$, $I_{out}=\qty{1}{\ampere}$: efficiency and
+dissipated power.
+\end{exercise}
+
+\begin{exercise}[Reading the numbers]
+A regulator shows $\Delta V_{out}=\qty{7}{\milli\volt}$ over an input range
+$\Delta V_{in}=\qty{17.5}{\volt}$, and $\Delta V_{out}=\qty{30}{\milli\volt}$ for
+a load step $\Delta I_{out}=\qty{1.5}{\ampere}$. Find the ripple rejection (dB)
+and the output resistance.
+\end{exercise}
+
+%=======================================================================
+\chapter{The classical (transformer) power supply}
+%=======================================================================
+
+\begin{exercise}[Size the secondary]
+Size the supply for \qty{12}{\volt}/\qty{0.5}{\ampere} from a 7812
+($V_{DO,min}=\qty{2}{\volt}$), full-wave bridge with $V_D=\qty{1}{\volt}$, ripple
+$\Delta V\le\qty{1}{\volt}$, mains $230\pm\qty{10}{\percent}$ at \qty{50}{\hertz}.
+(a)~The filter capacitor.
+(b)~The secondary RMS voltage and the turns ratio.
+(c)~Why would a \emph{half-wave} rectifier double the capacitor?
+\end{exercise}
+
+\begin{exercise}[Filter capacitor]
+Full-wave, $f=\qty{50}{\hertz}$, $V_{MAX}=\qty{9}{\volt}$,
+$I_{out}=\qty{100}{\milli\ampere}$, $C=\qty{2.2}{\milli\farad}$ (use
+$T_{dis}=T$). Find the ripple $\Delta V$, the conduction time $t_c$ and the peak
+charging current $I_{peak}$.
+\end{exercise}
+
+\begin{exercise}[The capacitor trade-off]
+Repeat the previous exercise with $C'=\qty{4.7}{\milli\farad}$ (same
+$f,V_{MAX},I_{out}$). What happens to $\Delta V$ and to $I_{peak}$?
+\end{exercise}
+
+%=======================================================================
+\chapter{Power factor and its correction}
+%=======================================================================
+
+\begin{exercise}[$R$--$L$ load and its correction]
+$R=\qty{3}{\ohm}$, $L=\qty{10.6}{\milli\henry}$, $V_S=\qty{480}{\volt_{RMS}}$ at
+$f=\qty{60}{\hertz}$ ($\omega=\qty{377}{rad/s}$).
+(a)~Find $|I_S|$, $\varphi$, $S$, $P$ and the power factor.
+(b)~Find the parallel capacitor that corrects $PF$ to $1$, and the new source
+current.
+\end{exercise}
+
+\begin{exercise}[The pure inductor]
+A purely inductive load $L=\qty{10.6}{\milli\henry}$ (no $R$), same source as
+above. (a)~Find $|I_S|$ and the power factor.
+(b)~Find the parallel $C$ that brings the source current to zero.
+\end{exercise}
+
+%=======================================================================
+\chapter{Linear voltage regulators}
+%=======================================================================
+
+\begin{exercise}[7805 at light load]
+A 7805 supplies $I_{out}=\qty{200}{\milli\ampere}$ from $V_{in}=\qty{8}{\volt}$.
+(a)~Dissipation, efficiency, and is the bare package ($R_{th}=\qty{60}{K/W}$)
+enough at $T_{amb}=\qty{25}{\celsius}$?
+(b)~What is the lowest rippled-input \emph{valley} that still regulates?
+\end{exercise}
+
+\begin{exercise}[7805 needs a heat sink]
+A 7805 supplies $I_{out}=\qty{1}{\ampere}$ from $V_{in}=\qty{12}{\volt}$.
+Find the dissipation and efficiency, and the junction temperature rise both bare
+($\qty{60}{K/W}$) and with a \qty{10}{K/W} heat sink.
+\end{exercise}
+
+\begin{exercise}[Efficiency ceiling]
+For a 78xx ($V_{DO,min}=\qty{2}{\volt}$), give the maximum efficiency
+$\eta_{MAX}=V_{out}/(V_{out}+2)$ for $V_{out}=\qty{3.3}{\volt}$,
+\qty{5}{\volt} and \qty{12}{\volt}.
+\end{exercise}
+
+%=======================================================================
+\chapter{Switching regulators}
+%=======================================================================
+
+\begin{exercise}[Buck duty cycle]
+A buck converter makes $V_{out}=\qty{5}{\volt}$ from
+$V_{in}=(9\pm1)\,\unit{\volt}$. Give the nominal duty cycle $\delta$ and its range
+over the input range.
+\end{exercise}
+
+\begin{exercise}[Boost from a battery]
+A \qty{12}{\volt} rail must come from a battery $V_{in}=(5\pm0.5)\,\unit{\volt}$,
+$f_{SW}=\qty{200}{\kilo\hertz}$.
+(a)~Topology and the $\delta$ range.
+(b)~With a capacitor-current swing $\Delta I_C=\qty{1.2}{\ampere}$ and
+$\text{ESR}=\qty{50}{\milli\ohm}$, the output ripple.
+(c)~Why is this topology's feedback loop deliberately made \emph{slow}?
+\end{exercise}
+
+\begin{exercise}[Minimum $L$ for CCM]
+A buck has $V_{in}=\qty{9}{\volt}$, $V_{out}=\qty{5}{\volt}$ ($\delta=0.556$),
+$f_{SW}=\qty{100}{\kilo\hertz}$, lightest load $I_{out,min}=\qty{50}{\milli\ampere}$.
+Find the smallest $L$ that keeps it in CCM and give the next standard value.
+\end{exercise}
+
+%=======================================================================
+\chapter{Laboratory: Buck converter}
+%=======================================================================
+
+\begin{exercise}[CCM or DCM?]
+For a buck with the boundary (critical) current
+$I_B=\dfrac{V_{out}(V_{in}-V_{out})}{2Lf_{sw}V_{in}}$, decide the conduction mode:
+(a)~$V_{in}=\qty{8}{\volt}$, $V_{out}=\qty{5}{\volt}$, $R_L=\qty{30.5}{\ohm}$,
+$I_B\approx\qty{0.11}{\ampere}$;
+(b)~$V_{in}=\qty{24}{\volt}$, $V_{out}=\qty{5}{\volt}$, $R_L=\qty{50}{\ohm}$,
+$I_B\approx\qty{0.23}{\ampere}$.
+\end{exercise}
+
+%=======================================================================
+\chapter{Answers}\label{ch:answers}
+%=======================================================================
+
+Final results only --- the matching chapter of the \emph{manual} shows how each is
+obtained.
+
+\section*{Chapter 1 --- Specifications}
+\ans{1.1}(a)~$S_I=0.010/1.495\approx\qty{6.7}{\milli\ohm}$;
+$S_V=0.003/4=\qty{0.75}{\milli\volt\per\volt}$; ripple rejection
+$=20\log_{10}(4/0.003)=\qty{62.5}{\dB}$.
+(b)~$P_{out}=\qty{5}{\watt}$, $P_{in}\approx\qty{12}{\watt}$:
+$\eta=\qty{41.7}{\percent}$, $P_d=\qty{7}{\watt}$ of heat.
+\ans{1.2}Ripple rejection $=20\log_{10}(17.5/0.007)=\qty{68}{\dB}$;
+$S_I=0.030/1.5=\qty{20}{\milli\ohm}$.
+
+\section*{Chapter 2 --- The classical (transformer) power supply}
+\ans{2.1}(a)~$C=I_{out}(T/2)/\Delta V=\qty{5}{\milli\farad}$.
+(b)~$V_{MAX}=\qty{15}{\volt}$, secondary peak \qty{17}{\volt},
+$V_{S,RMS}=\qty{12.0}{\volt}$; at $-\qty{10}{\percent}$ that is \qty{13.4}{\volt}
+$\Rightarrow$ pick a \qty{15}{\volt_{RMS}} secondary, ratio $\approx230/15=15.3$.
+(c)~Half-wave discharges for the whole period $T$, twice as long, so the same
+$\Delta V$ needs $C=\qty{10}{\milli\farad}$.
+\ans{2.2}$\Delta V=\qty{0.9}{\volt}$, $t_c=\qty{1.44}{\milli\second}$,
+$I_{peak}=\qty{2.77}{\ampere}$.
+\ans{2.3}$\Delta V'=\qty{0.43}{\volt}$ (smaller), $t_c'=\qty{0.98}{\milli\second}$,
+$I_{peak}'=\qty{4.1}{\ampere}$ (larger) --- lower ripple, higher current peak.
+
+\section*{Chapter 3 --- Power factor and its correction}
+\ans{3.1}(a)~$\omega L=\qty{4}{\ohm}$, $|Z|=\qty{5}{\ohm}$,
+$|I_S|=\qty{96}{\ampere}$, $\varphi=53.1^\circ$, $S=\qty{46.08}{\kilo\VA}$,
+$P=\qty{27.67}{\kilo\watt}$, $PF=0.6$.
+(b)~$C=L/(\omega^2L^2+R^2)=\qty{424.5}{\micro\farad}$; source current drops to
+$\qty{58}{\ampere}$, $PF=1$.
+\ans{3.2}(a)~$|I_S|=V_S/(\omega L)=\qty{120}{\ampere}$, $\varphi=90^\circ$,
+$PF=0$. (b)~$C=1/(\omega^2L)=\qty{663.8}{\micro\farad}$ (resonance), ideally
+$I_S=0$.
+
+\section*{Chapter 4 --- Linear voltage regulators}
+\ans{4.1}(a)~$P_{reg}=\qty{0.6}{\watt}$, $\eta=\qty{62.5}{\percent}$; junction
+rise $\qty{36}{K}\Rightarrow T_j\approx\qty{61}{\celsius}$ --- fine without a heat
+sink. (b)~$V_{MIN}=V_{out}+V_{DO,min}=\qty{7}{\volt}$.
+\ans{4.2}$P_{reg}=\qty{7}{\watt}$, $\eta=\qty{42}{\percent}$; bare rise
+\qty{420}{K} (far past the \qty{125}{\celsius} limit), with \qty{10}{K/W} rise
+\qty{70}{K} $\Rightarrow T_j\approx\qty{95}{\celsius}$ (acceptable).
+\ans{4.3}$\eta_{MAX}=\qty{62.3}{\percent}$ (\qty{3.3}{\volt}),
+\qty{71.4}{\percent} (\qty{5}{\volt}), \qty{85.7}{\percent} (\qty{12}{\volt}).
+
+\section*{Chapter 5 --- Switching regulators}
+\ans{5.1}$\delta=V_{out}/V_{in}=\qty{55.5}{\percent}$; range
+$\qty{50}{\percent}$ ($V_{in}=\qty{10}{\volt}$) to $\qty{62.5}{\percent}$
+($V_{in}=\qty{8}{\volt}$).
+\ans{5.2}(a)~$V_{out}>V_{in}$: \textbf{Boost}, $\delta=1-V_{in}/V_{out}$, range
+$\qty{62.5}{\percent}\dots\qty{54.2}{\percent}$ (nominal \qty{58.3}{\percent}).
+(b)~$\Delta V_{out}=\Delta I_C\cdot\text{ESR}=\qty{60}{\milli\volt}$.
+(c)~The boost is prone to instability, so its loop is given a low bandwidth ---
+it reacts slowly but will not oscillate.
+\ans{5.3}$L_{min}=\dfrac{(V_{in}-V_{out})\delta}{2I_{out,min}f_{SW}}
+=\qty{222}{\micro\henry}$; pick the next standard \qty{330}{\micro\henry}
+($\Delta I_L\approx\qty{67}{\milli\ampere}$, CCM holds).
+
+\section*{Chapter 6 --- Laboratory: Buck converter}
+\ans{6.1}(a)~$I_{out}=V_{out}/R_L\approx\qty{0.16}{\ampere}>I_B$ $\Rightarrow$
+\textbf{CCM}. (b)~$I_{out}\approx\qty{0.10}{\ampere}<I_B$ $\Rightarrow$
+\textbf{DCM} (light load at a high step-down ratio).
+
+\end{document}

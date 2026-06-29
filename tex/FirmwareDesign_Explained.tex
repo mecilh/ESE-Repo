@@ -1,0 +1,1902 @@
+\documentclass[11pt,a4paper]{article}
+
+%======================================================================
+% PACKAGES
+%======================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{booktabs}
+
+%======================================================================
+% STYLE
+%======================================================================
+\definecolor{codebg}{rgb}{0.96,0.96,0.92}
+\definecolor{codekw}{rgb}{0.10,0.10,0.65}
+\definecolor{codestr}{rgb}{0.55,0.10,0.10}
+\definecolor{codecom}{rgb}{0.20,0.45,0.20}
+\definecolor{boxblue}{rgb}{0.85,0.92,1.0}
+\definecolor{boxyellow}{rgb}{1.0,0.97,0.80}
+\definecolor{boxred}{rgb}{1.0,0.88,0.88}
+
+\lstdefinestyle{C}{
+    language=C,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{codekw}\bfseries,
+    stringstyle=\color{codestr},
+    commentstyle=\color{codecom}\itshape,
+    breaklines=true,
+    showstringspaces=false,
+    frame=single,
+    rulecolor=\color{black!30},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    captionpos=b,
+    tabsize=4
+}
+\lstdefinestyle{shell}{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{black!30}
+}
+
+\newtcolorbox{keyidea}{colback=boxblue, colframe=blue!50!black, title=Key Idea}
+\newtcolorbox{warning}{colback=boxred, colframe=red!50!black, title=Watch Out}
+\newtcolorbox{note}{colback=boxyellow, colframe=orange!60!black, title=Note}
+
+\titleformat{\section}{\Large\bfseries\color{blue!40!black}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries\color{blue!30!black}}{\thesubsection}{1em}{}
+
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Firmware Design --- In-Depth Notes}
+\fancyhead[R]{\thepage}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    urlcolor=blue!60!black,
+}
+
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0pt}
+
+%======================================================================
+\title{\textbf{Firmware Design --- The Big "What the Hell is Going On" Guide}\\
+       \large An in-depth walkthrough of the course syllabus}
+\author{Course companion notes}
+\date{May 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+%======================================================================
+\section{Classic vs.\ Embedded Systems}
+%======================================================================
+
+A ``classic'' data processing system is what you are reading these notes on:
+a PC or a server. An \textbf{embedded system} is a computer that you usually
+don't \emph{see} as a computer: the thing inside your washing machine, car ECU,
+drone flight controller, smart thermostat, or pacemaker. Both run code, but
+they live in very different worlds.
+
+\subsection{Hardware differences}
+
+\begin{tabular}{p{0.27\linewidth} p{0.34\linewidth} p{0.34\linewidth}}
+\toprule
+\textbf{Aspect} & \textbf{Classic (PC/Server)} & \textbf{Embedded (MCU)} \\
+\midrule
+CPU & GHz, multi-core, out-of-order, deep pipeline, branch predictor, big caches & MHz to few hundred MHz, often single-core (Cortex-M, AVR), shallow pipeline, little or no cache \\
+Memory & GB of DRAM, virtual memory via MMU & KB to a few MB of \emph{on-chip} SRAM; no MMU (usually an MPU at most) \\
+Storage & TB of SSD/HDD with a file system & KB--MB of internal Flash; sometimes external SPI Flash; no FS unless you bolt one on \\
+Peripherals & PCIe, USB, NIC; abstracted by OS drivers & GPIO, UART, SPI, I\textsuperscript{2}C, ADC, DAC, timers, CAN; you talk to them register-by-register \\
+Power & 10s--100s of W, fans, heatsinks & mA or µA; often battery powered, sometimes energy harvesting \\
+Cost & 100s--1000s of \$, depreciates over years & cents to a few \$, sold by the million \\
+\bottomrule
+\end{tabular}
+
+\subsection{Software differences}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Operating system.} A PC has Linux/Windows/macOS with a kernel,
+    drivers, multitasking, virtual memory, security boundaries, paging, etc.
+    An MCU often runs \emph{bare-metal} (your code \emph{is} everything), or at
+    most a small RTOS (FreeRTOS, Zephyr, ThreadX) that gives you tasks,
+    queues and mutexes but no MMU and no protected processes.
+    \item \textbf{Real-time constraints.} A PC's job is throughput
+    (``finish quickly on average''). An embedded system frequently has
+    \emph{deadlines} (``never miss a sample window or the motor melts'').
+    A 1 ms hiccup on Linux is invisible; on a brushless-motor controller it
+    can be a fire.
+    \item \textbf{Determinism.} You avoid features that introduce
+    unpredictability: dynamic memory allocation, garbage collection,
+    unbounded loops/recursion, virtual memory faults, etc.
+    \item \textbf{Resource consciousness.} Every byte of Flash and every
+    byte of RAM matters. You profile not just runtime but \emph{stack depth}
+    and \emph{ROM usage}.
+    \item \textbf{Update model.} On a PC you ``apt upgrade''. On an embedded
+    device you must design a firmware update mechanism (bootloader, dual-bank
+    flash, signature checking) or accept that the firmware is frozen forever.
+    \item \textbf{Failure model.} On a PC, the OS catches and reports faults.
+    On a bare-metal MCU, a wild pointer either silently corrupts memory or
+    triggers a HardFault that, if not handled, locks the chip --- often the
+    only feedback is ``the LED stopped blinking''.
+\end{itemize}
+
+\begin{keyidea}
+An embedded engineer writes code that runs \emph{forever}, on hardware that
+\emph{costs cents}, against \emph{real-world physics}, with \emph{no operator}
+to restart the process. That changes every single engineering decision compared
+to PC software.
+\end{keyidea}
+
+%======================================================================
+\section{Microprocessor Interrupts Management}
+%======================================================================
+
+An \textbf{interrupt} is a hardware-triggered jump in the CPU's normal
+execution flow. The CPU is doing something, an event happens (a UART byte
+arrives, a timer expires, a button is pressed), and the hardware forces the
+CPU to stop what it was doing, save its state, jump to a piece of code called
+the \textbf{Interrupt Service Routine (ISR)}, run it, then resume the original
+work as if nothing happened.
+
+\subsection{Why interrupts at all?}
+
+The alternative is \textbf{polling}: a loop that constantly checks each
+peripheral, ``do you have data? do you have data? do you have data?''.
+Polling wastes CPU, increases latency to the worst-case polling period, and
+makes power management impossible (CPU can never sleep). Interrupts let the
+CPU sleep or do useful work and react only when needed.
+
+\subsection{The mechanism, step by step}
+
+\begin{enumerate}[leftmargin=*]
+    \item Peripheral asserts an IRQ line (e.g.\ ``USART2\_RX has a byte'').
+    \item The Interrupt Controller (\textbf{NVIC} on ARM Cortex-M) prioritises
+    pending interrupts and, if priority allows, signals the core.
+    \item The core finishes the current instruction, then automatically pushes
+    a context (on Cortex-M: \texttt{xPSR, PC, LR, R12, R3, R2, R1, R0}) onto
+    the current stack. This is the \emph{hardware-stacked frame}.
+    \item The core loads the PC from the \textbf{Interrupt Vector Table}
+    entry corresponding to that IRQ number. The vector table is just an array
+    of function pointers at a fixed memory address (start of Flash on Cortex-M).
+    \item The ISR runs. It must clear the source of the interrupt (e.g.\
+    read the data register, write the ``flag clear'' bit), otherwise the
+    interrupt re-fires forever.
+    \item ISR returns by executing a special return value (\texttt{EXC\_RETURN}
+    on Cortex-M). Hardware unstacks the frame and resumes the interrupted code.
+\end{enumerate}
+
+\subsection{Important concepts}
+
+\begin{description}[leftmargin=*, style=nextline]
+    \item[Maskable vs.\ Non-Maskable (NMI).] Maskable IRQs can be globally
+    disabled (\texttt{cpsid i} on Cortex-M, \texttt{cli} on AVR). NMI cannot
+    be masked --- reserved for catastrophic things (clock failure, watchdog
+    pre-warn).
+    \item[Priority \& preemption.] Each interrupt has a priority. A higher-
+    priority interrupt can preempt a lower-priority ISR currently running.
+    Same-priority interrupts do not preempt each other; they queue.
+    \item[Re-entrancy.] If you call a function from both an ISR and main
+    code, it must be re-entrant: no static state, or properly protected
+    with critical sections. \texttt{strtok}, \texttt{rand}, \texttt{malloc}
+    are not re-entrant.
+    \item[Latency.] Interrupt latency = time from event to first ISR
+    instruction. Cortex-M3/M4: 12 cycles deterministic, including the
+    hardware stacking. This determinism is the whole point of Cortex-M for
+    real-time.
+    \item[Tail-chaining \& late arrival.] Cortex-M optimisations: if a new
+    IRQ is pending when an ISR finishes, the unstack/re-stack is skipped
+    (tail-chaining). If a higher-priority IRQ arrives during the stacking
+    of a lower one, the higher one runs first (late arrival).
+\end{description}
+
+\begin{warning}
+The \#1 ISR mistake: doing too much work inside it. ISRs should be
+\emph{short}. Read the byte, push it to a queue, signal a task, return.
+Long ISRs increase worst-case latency for all other interrupts and make the
+system look fine in testing and explode in the field.
+\end{warning}
+
+\begin{lstlisting}[style=C, caption={Typical ISR pattern (STM32 HAL)}]
+volatile uint8_t rx_buf[64];
+volatile uint8_t rx_head = 0;
+
+void USART2_IRQHandler(void)
+{
+    if (USART2->SR & USART_SR_RXNE) {
+        rx_buf[rx_head++ & 0x3F] = USART2->DR; /* reading DR clears RXNE */
+    }
+}
+\end{lstlisting}
+
+Notice the \texttt{volatile}: the ISR and main code share \texttt{rx\_head}
+and \texttt{rx\_buf}, so the compiler must not cache these in registers
+across uses.
+
+%======================================================================
+\section{Executable Code Generation --- The GCC Model}
+%======================================================================
+
+A C program does not magically become an executable. GCC orchestrates
+\emph{four} distinct stages, each of which can be stopped and inspected.
+
+\subsection{The four stages}
+
+\begin{center}
+\texttt{.c} $\xrightarrow{\text{preprocess}}$ \texttt{.i}
+        $\xrightarrow{\text{compile}}$ \texttt{.s}
+        $\xrightarrow{\text{assemble}}$ \texttt{.o}
+        $\xrightarrow{\text{link}}$ \texttt{a.out / .elf}
+\end{center}
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Preprocessing} (\texttt{cpp}). Expands \texttt{\#include},
+    \texttt{\#define}, \texttt{\#if}, removes comments. Output is still C,
+    but with all headers inlined and macros substituted. No compilation yet.
+    \item \textbf{Compilation} (\texttt{cc1}). Parses the C, does optimisations,
+    emits \emph{assembly} for the target architecture. This is where things
+    like inlining, dead-code elimination, and register allocation happen.
+    \item \textbf{Assembly} (\texttt{as}). Turns assembly mnemonics into
+    machine code, producing a relocatable \textbf{object file} (\texttt{.o}).
+    Object files contain code and data, plus a \emph{symbol table} and
+    \emph{relocation entries} (placeholders to be patched at link time).
+    \item \textbf{Linking} (\texttt{ld}). Combines all the \texttt{.o} files
+    and libraries, resolves cross-references, lays out the final memory map
+    according to a \emph{linker script}, and emits the executable (ELF on
+    Linux / embedded, PE on Windows, Mach-O on macOS).
+\end{enumerate}
+
+\subsection{Stopping at each stage}
+
+\begin{lstlisting}[style=shell, caption={Useful gcc invocations}]
+# Preprocess only -- look at the expanded source
+gcc -E hello.c -o hello.i
+
+# Compile to assembly -- look at what gcc emitted
+gcc -S hello.c -o hello.s
+gcc -S -O2 hello.c -o hello_opt.s   # with optimisation
+
+# Compile + assemble, but don't link -- get the .o
+gcc -c hello.c -o hello.o
+
+# Full pipeline
+gcc hello.c -o hello
+
+# Useful diagnostic flags
+gcc -Wall -Wextra -Wpedantic -O2 -g hello.c -o hello
+gcc -v hello.c          # verbose: show every sub-tool invocation
+gcc -save-temps hello.c # keep .i and .s alongside the output
+\end{lstlisting}
+
+\subsection{objdump: read the binaries you produce}
+
+\texttt{objdump} is to object files what \texttt{less} is to text files.
+You should reach for it constantly when ``something is weird''.
+
+\begin{lstlisting}[style=shell, caption={objdump cheat sheet}]
+objdump -h hello.o      # list sections and their sizes
+objdump -d hello.o      # disassemble code sections
+objdump -D hello.o      # disassemble EVERYTHING (including data)
+objdump -t hello.o      # symbol table
+objdump -r hello.o      # relocation entries (what the linker still has to patch)
+objdump -s hello.o      # hex+ASCII dump of all sections (good for .rodata)
+objdump -x hello.o      # everything: headers, symbols, relocations
+objdump -S hello        # interleave source with disasm (needs -g at compile)
+
+# For embedded: pick the right toolchain prefix
+arm-none-eabi-objdump -d firmware.elf
+\end{lstlisting}
+
+\begin{keyidea}
+If you can read what \texttt{objdump -d} produces, you can debug almost any
+``the C code looks right but the chip does the wrong thing'' problem.
+Optimisers are aggressive --- the only ground truth is the disassembly.
+\end{keyidea}
+
+%======================================================================
+\section{Cross-Compilation Environments for Embedded Systems}
+%======================================================================
+
+A native compiler runs on \emph{the same} architecture it produces code for:
+gcc on x86 producing x86 binaries. A \textbf{cross-compiler} runs on one
+architecture (the \emph{host}, usually x86\_64) and produces code for another
+(the \emph{target}, usually ARM, RISC-V, AVR, etc.).
+
+\subsection{Why cross-compile?}
+
+Because the target MCU is almost certainly too small to host a C compiler:
+your STM32F4 has 192 KB of RAM; GCC needs hundreds of MB. So you build on
+your laptop, then transfer the resulting \texttt{.elf}/\texttt{.bin} to the
+chip via a debugger probe (ST-Link, J-Link) or a bootloader (DFU, UART).
+
+\subsection{The toolchain triplet}
+
+A toolchain is named by a \emph{triplet} of the form
+\texttt{arch-vendor-os-abi}. For embedded ARM you'll see:
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{arm-none-eabi-} --- ARM CPU, no OS (\texttt{none}),
+    EABI calling convention. Used for \emph{bare-metal} and RTOS firmware on
+    Cortex-M / Cortex-R. This is the ST/CubeIDE default.
+    \item \texttt{arm-linux-gnueabihf-} --- ARM CPU, Linux user-space,
+    glibc, hard-float ABI. Used when targeting embedded Linux boards
+    (Raspberry Pi, BeagleBone).
+    \item \texttt{riscv64-unknown-elf-} --- RISC-V 64, bare-metal.
+\end{itemize}
+
+Each tool is prefixed: \texttt{arm-none-eabi-gcc}, \texttt{-as}, \texttt{-ld},
+\texttt{-objdump}, \texttt{-objcopy}, \texttt{-gdb}, \texttt{-size}.
+
+\subsection{What changes vs.\ native gcc?}
+
+\begin{itemize}[leftmargin=*]
+    \item You must tell it the exact CPU and FPU:
+    \texttt{-mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard}.
+    \item There is no \texttt{libc} that talks to an OS; you use
+    \textbf{newlib} or \textbf{newlib-nano}, which expects you to provide
+    \emph{syscalls} (\texttt{\_write}, \texttt{\_sbrk}, \texttt{\_read}, ...).
+    \item You must supply a \emph{linker script} (\texttt{.ld}) describing
+    Flash and RAM regions.
+    \item You must supply \emph{startup code} (\texttt{startup\_stm32xxx.s})
+    that sets up the stack, zeroes \texttt{.bss}, copies \texttt{.data} from
+    Flash to RAM, then calls \texttt{main()}.
+    \item The output \texttt{.elf} usually has to be converted to raw binary
+    or Intel HEX for the flasher:
+    \texttt{arm-none-eabi-objcopy -O binary fw.elf fw.bin}.
+\end{itemize}
+
+%======================================================================
+\section{Sections in Object Files and Executables}
+%======================================================================
+
+An ELF binary is divided into \textbf{sections}, each holding one ``kind'' of
+content. The linker decides where each section lives in memory.
+
+\subsection{The canonical sections}
+
+\begin{tabular}{p{0.18\linewidth} p{0.45\linewidth} p{0.32\linewidth}}
+\toprule
+\textbf{Section} & \textbf{What's in it} & \textbf{Lives in (MCU)} \\
+\midrule
+\texttt{.text}   & Executable code (machine instructions) & Flash \\
+\texttt{.rodata} & Read-only data: string literals, \texttt{const} globals, lookup tables & Flash \\
+\texttt{.data}   & Initialised, writable globals/statics (e.g.\ \texttt{int x = 5;}) & RAM (loaded from Flash at boot) \\
+\texttt{.bss}    & Zero-initialised globals/statics (e.g.\ \texttt{int y;}) & RAM (zeroed at boot) \\
+\texttt{.stack}  & Function call frames, local variables & RAM \\
+\texttt{.heap}   & Dynamically allocated blocks (\texttt{malloc}) & RAM \\
+\texttt{.isr\_vector} & Interrupt vector table & Beginning of Flash \\
+\bottomrule
+\end{tabular}
+
+\subsection{Why this matters in embedded}
+
+On a PC you almost never think about sections. On an MCU you do, because:
+
+\begin{itemize}[leftmargin=*]
+    \item Flash and RAM are \emph{separate physical memories} at different
+    addresses. The linker must tell each section which one it lives in.
+    \item \texttt{.data} is tricky: it needs an initial value at boot,
+    but it must be writable. Solution: a \emph{copy} is stored in Flash, and
+    the startup code copies it to RAM before \texttt{main()}.
+    \item Sections let you place specific code/data at specific addresses
+    (e.g.\ DMA buffer in a particular SRAM bank --- see Section~\ref{sec:dma}).
+\end{itemize}
+
+\subsection{Custom sections via attributes}
+
+\begin{lstlisting}[style=C, caption={Placing variables in custom sections}]
+/* Put this buffer in section ".dma_buffer", defined in linker script */
+__attribute__((section(".dma_buffer"))) uint8_t dma_buf[1024];
+
+/* Put a function in RAM for speed (must be copied at boot) */
+__attribute__((section(".ramfunc"))) void fast_isr(void) { ... }
+\end{lstlisting}
+
+The linker script then has matching lines like:
+\begin{lstlisting}[style=shell]
+.dma_buffer (NOLOAD) : { *(.dma_buffer) } > SRAM2
+\end{lstlisting}
+
+%======================================================================
+\section{Memory Allocation of Static vs.\ Local Variables}
+%======================================================================
+
+This is a topic where ``intuition from PC code'' lies to you. Let's be precise.
+
+\subsection{Static variables}
+
+\textbf{Static} = \emph{static storage duration}. These exist for the whole
+program lifetime. That includes:
+\begin{itemize}[leftmargin=*]
+    \item File-scope globals (\texttt{int counter;}).
+    \item File-scope \texttt{static} globals (same lifetime, file-local visibility).
+    \item Function-scope \texttt{static} locals (\texttt{static int n = 0;}
+    inside a function --- exists across calls, only initialised once).
+\end{itemize}
+
+Where do they live?
+\begin{itemize}[leftmargin=*]
+    \item Initialised to nonzero $\rightarrow$ \texttt{.data} (RAM at run-time,
+    initial value sitting in Flash).
+    \item Initialised to zero or uninitialised $\rightarrow$ \texttt{.bss}
+    (zeroed RAM, no Flash cost for initial values).
+    \item \texttt{const} qualified $\rightarrow$ \texttt{.rodata} (Flash on MCU).
+\end{itemize}
+
+\subsection{Local (automatic) variables}
+
+A function-local non-\texttt{static} variable has \emph{automatic} storage:
+created on function entry, destroyed on return. Conceptually on the
+\textbf{stack}. \emph{In practice, the optimiser is in charge}.
+
+\subsubsection{Without optimisations (\texttt{-O0})}
+
+Every local lives on the stack at a fixed offset from the frame pointer.
+You can put a breakpoint and inspect any variable at any moment. Code is
+slow and bloated but predictable. This is what you want when stepping
+through code in a debugger.
+
+\subsubsection{With optimisations (\texttt{-O2}, \texttt{-Os}, \texttt{-O3})}
+
+\begin{itemize}[leftmargin=*]
+    \item Locals that fit in registers and have short live ranges are kept
+    \emph{entirely in registers} --- they never touch RAM.
+    \item Locals whose value is never used after assignment are \emph{eliminated}.
+    \item Constants computed at compile time are propagated into uses
+    (constant folding).
+    \item Dead code (\texttt{if (0) \{ ... \}}) is removed.
+    \item Loops may be unrolled or rewritten.
+\end{itemize}
+
+\begin{warning}
+A consequence that bites every beginner: in optimised code, a variable
+\texttt{x} may not exist at the moment you place a breakpoint. The debugger
+shows ``optimized out''. Use \texttt{-Og} (debug-friendly optimisation) or
+\texttt{-O0} while learning. Also: an optimiser may remove a delay loop
+unless variables are \texttt{volatile} or you use a real timer.
+\end{warning}
+
+\subsection{RISC vs.\ CISC variations}
+
+\paragraph{RISC (ARM Cortex-M, RISC-V, AVR).}
+Load--store architecture: ALU operates only on registers. To use a memory
+value you must \texttt{LOAD} it, operate, then \texttt{STORE}.
+RISCs have many general-purpose registers (ARM: 13 of them in user mode).
+$\Rightarrow$ Compilers keep many locals in registers. Function prologues
+push the registers they intend to clobber; epilogues pop them.
+
+\paragraph{CISC (x86, x86-64).}
+Memory operands allowed in most instructions: \texttt{ADD [ebp-4], eax}
+adds \texttt{eax} directly into the local at \texttt{[ebp-4]}.
+x86-32 has only \textasciitilde 8 GP registers, so locals more often
+spill to the stack. x86-64 doubled the register count, so modern x86-64
+code looks more RISC-like in its allocation patterns.
+
+\paragraph{Practical impact.}
+On a Cortex-M, a leaf function with five \texttt{int} locals usually
+generates \emph{zero stack usage}: everything in R0--R12. On a 32-bit x86
+the same function might push four of them to the stack. This is why
+embedded stack budgets are often surprisingly small.
+
+%======================================================================
+\section{Debug Hardware Unit in Microcontrollers}
+%======================================================================
+
+On a PC, the debugger (gdb) talks to the OS, which uses \texttt{ptrace} to
+control the target process. On an MCU there is no OS, so the debugger must
+talk to \emph{hardware logic inside the chip} that can halt the core, peek
+at registers, set breakpoints, and resume.
+
+\subsection{The pieces (ARM CoreSight family)}
+
+\begin{description}[leftmargin=*, style=nextline]
+    \item[DAP (Debug Access Port).] The bridge between an external probe
+    (ST-Link, J-Link) and the chip's internal debug bus.
+    \item[JTAG / SWD.] The wire-level protocols the probe uses.
+    JTAG = 4--5 wires (TCK, TMS, TDI, TDO, optional TRST), industry classic.
+    SWD = 2 wires (SWCLK, SWDIO), ARM-specific, saves pins --- this is the
+    common one on modern STM32.
+    \item[FPB (Flash Patch \& Breakpoint).] Hardware breakpoint comparators.
+    Limited (typically 4--8). The CPU halts on instruction fetch from a
+    matching address.
+    \item[DWT (Data Watchpoint \& Trace).] Watchpoints (halt when an
+    address is read/written), plus cycle counters, exception trace, PC sampling.
+    \item[ITM (Instrumentation Trace Macrocell).] Lets the firmware emit
+    \texttt{printf}-style messages over a single SWO pin to the debugger.
+    Insanely useful, costs almost nothing.
+    \item[ETM (Embedded Trace Macrocell).] Streams the full instruction
+    trace off-chip. Expensive in pin count, used for hard-to-reproduce
+    timing bugs.
+    \item[MPU (Memory Protection Unit).] Not strictly a debug feature, but
+    pairs with debug: catches accesses to regions you've marked off-limits.
+\end{description}
+
+\subsection{Hardware vs.\ software breakpoints}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Hardware breakpoints} use FPB comparators. They work even
+    on code in Flash (which you cannot modify at runtime). Limited number.
+    \item \textbf{Software breakpoints} are implemented by overwriting an
+    instruction with \texttt{BKPT} (Cortex-M) or \texttt{INT3} (x86), and
+    restoring it on hit. Unlimited, but require writable code memory ---
+    so on Flash they fall back to hardware breakpoints.
+\end{itemize}
+
+\subsection{What you can do thanks to all this}
+
+\begin{itemize}[leftmargin=*]
+    \item Halt the CPU and inspect every register and any memory location.
+    \item Single-step instructions or source lines.
+    \item Set a breakpoint that triggers only when \texttt{rx\_head == 64}.
+    \item Watch a global and halt the moment something writes to it
+    (great for ``who is corrupting my buffer?'').
+    \item Reflash the chip directly from the IDE.
+    \item Stream \texttt{printf} over SWO without using a UART.
+\end{itemize}
+
+%======================================================================
+\section{Dynamic Memory Allocation in the C Standard Library}
+%======================================================================
+
+\texttt{malloc()} and \texttt{free()} are part of the C library, not the
+language. Their implementation is up to whoever shipped your libc.
+
+\subsection{What \texttt{malloc} actually does}
+
+\begin{enumerate}[leftmargin=*]
+    \item Maintains an internal data structure tracking free chunks in a
+    pool of memory called the \textbf{heap}.
+    \item On request, walks the free list, picks (or splits) a chunk big
+    enough, marks it allocated, and returns a pointer just past the
+    bookkeeping header.
+    \item \texttt{free()} returns the chunk to the free list and (if
+    possible) coalesces it with adjacent free chunks.
+    \item When the heap is exhausted, \texttt{malloc} asks the OS (or, in
+    embedded, an underlying \texttt{\_sbrk}) for more memory.
+\end{enumerate}
+
+\subsection{Embedded reality: newlib and \texttt{\_sbrk}}
+
+Newlib's \texttt{malloc} doesn't know your chip's memory map. It calls
+\texttt{\_sbrk(size)}, a function \emph{you} (or the framework) provide,
+that hands out memory from a region typically defined in the linker script
+as \texttt{\_end} up to \texttt{\_estack - stack\_reserve}.
+
+\begin{lstlisting}[style=C, caption={Typical \_sbrk for STM32 with newlib}]
+extern char _end;          /* end of .bss, start of heap (from linker) */
+extern char _estack;       /* top of RAM (initial stack pointer)        */
+static char *heap_ptr = &_end;
+
+void *_sbrk(int incr)
+{
+    char *prev = heap_ptr;
+    if (heap_ptr + incr > (&_estack - 0x400)) { /* 1 KiB stack reserve */
+        errno = ENOMEM;
+        return (void *) -1;
+    }
+    heap_ptr += incr;
+    return prev;
+}
+\end{lstlisting}
+
+\subsection{Why we don't trust \texttt{malloc} in embedded}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Non-determinism.} Allocation time depends on the current
+    free-list state. A real-time loop can't tolerate this.
+    \item \textbf{Fragmentation.} After many allocate/free cycles, the heap
+    is full of small holes. A new allocation may fail even though the total
+    free memory is enough. There is no compaction (you can't move allocated
+    blocks --- pointers would dangle).
+    \item \textbf{No graceful failure mode.} If \texttt{malloc} returns
+    \texttt{NULL} on an MCU, what do you do? On a PC you log and bail out.
+    On a motor controller, ``log and bail'' may mean ``the motor keeps
+    spinning while the firmware is dead''.
+    \item \textbf{Heap/stack collision.} Heap grows up, stack grows down,
+    they share the same RAM. Worst case: heap silently overwrites stack
+    or vice versa --- HardFault, far from the actual cause.
+    \item \textbf{Code size.} Even if you ``never call malloc'', linking
+    one function that calls \texttt{printf("\%f", ...)} can drag in malloc
+    and float support and balloon your binary.
+\end{itemize}
+
+\begin{keyidea}
+In safety-critical embedded code (automotive MISRA, aerospace DO-178C),
+dynamic allocation is either entirely forbidden, or restricted to the
+initialisation phase only.
+\end{keyidea}
+
+%======================================================================
+\section{C Constructs to Avoid in Embedded}
+%======================================================================
+
+These rules look like nitpicks. They aren't. They are scar tissue from
+real, expensive failures.
+
+\subsection{Always use braces, even for single-statement blocks}
+
+\begin{lstlisting}[style=C]
+/* BAD */
+if (flag)
+    do_thing();
+    log_event();           /* always runs! indentation lies */
+
+/* GOOD */
+if (flag) {
+    do_thing();
+}
+log_event();
+\end{lstlisting}
+
+This is exactly the bug behind Apple's \emph{goto fail} TLS vulnerability
+(2014): a duplicated \texttt{goto fail;} not guarded by braces skipped a
+signature check unconditionally. Braces would have prevented it.
+The MISRA-C 15.6 rule mandates braces.
+
+\subsection{No unlimited recursion}
+
+Recursion eats stack. The stack is small (often 1--8 KB) and shared with
+ISRs. A recursion depth that depends on input data can silently overflow.
+Either rewrite iteratively, or impose a hard cap and \emph{verify} that
+the cap times the per-frame size fits in your stack budget.
+
+\subsection{No \texttt{malloc}/\texttt{free}}
+
+See previous section. Use one of:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Static allocation.} All buffers and objects declared at
+    file scope.
+    \item \textbf{Memory pools.} A fixed array of fixed-size blocks plus a
+    bitmask of which are in use. \texttt{O(1)} alloc/free, no fragmentation.
+    \item \textbf{Allocator-bounded design.} Allocate everything during
+    \texttt{init()}, never afterwards. Then the system either boots or
+    fails to boot --- never runs out of memory at runtime.
+\end{itemize}
+
+\subsection{Prefer indexes to pointers for array traversal}
+
+\begin{lstlisting}[style=C]
+/* Less safe */
+for (int *p = arr; p < arr + N; ++p) *p = 0;
+
+/* Safer, easier to bounds-check, easier to reason about */
+for (size_t i = 0; i < N; ++i) arr[i] = 0;
+\end{lstlisting}
+
+Pointers do not carry array length: once you have a \texttt{int *p},
+all the size information has evaporated. Indexes keep the array name
+visible at every use, which makes bounds checks both possible and
+obvious (\texttt{if (i < N)}). Tools like static analysers can also reason
+much better about indices.
+
+\subsection{Other classics worth knowing}
+
+\begin{itemize}[leftmargin=*]
+    \item No implicit \texttt{int} conversions / no shadowed variables.
+    \item No \texttt{goto} except for ``goto cleanup'' patterns.
+    \item No variable-length arrays (\texttt{int x[n]} where \texttt{n} is
+    runtime --- they're stack-based and unbounded).
+    \item No mixing of signed and unsigned in comparisons.
+    \item Initialise every variable before use; don't trust ``zero by default''.
+\end{itemize}
+
+%======================================================================
+\section{Dedicated Memory Areas for I/O Buffers and DMA Access}
+\label{sec:dma}
+%======================================================================
+
+\textbf{DMA (Direct Memory Access)} is a hardware engine that copies data
+between memory and a peripheral (or memory and memory) \emph{without
+involving the CPU}. The CPU configures source, destination, size, and
+goes back to doing other things; the DMA controller does the transfer
+and raises an interrupt when done.
+
+DMA is great for performance (megabytes/s) and power (CPU can sleep), but
+it introduces constraints that ordinary code does not have.
+
+\subsection{Why DMA needs special memory placement}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Bus accessibility.} The DMA controller has a specific
+    matrix of which masters can reach which memory regions. On STM32F4,
+    for instance, DMA2 can access SRAM1 but not CCM (Core-Coupled Memory).
+    Putting a DMA buffer in CCM yields silent garbage.
+    \item \textbf{Cache coherency.} On MCUs with a data cache (Cortex-M7),
+    the CPU sees the cached copy and DMA sees the underlying RAM. If you
+    write through the cache and the DMA reads RAM, it sees stale data; if
+    the DMA writes RAM and the CPU reads the cache, it sees stale data.
+    Solutions: place DMA buffers in a non-cacheable region, or
+    invalidate/clean cache lines manually.
+    \item \textbf{Alignment.} Many DMA engines require source/destination
+    alignment to the transfer width (\texttt{\_\_attribute\_\_((aligned(4)))}).
+    \item \textbf{Linker placement.} You usually carve out a specific
+    region in the linker script (e.g.\ \texttt{SRAM2}) and force buffers
+    into it via \texttt{\_\_attribute\_\_((section(".dma\_buffer")))}.
+\end{itemize}
+
+\subsection{An example layout}
+
+\begin{lstlisting}[style=C]
+/* aligned to 32 bytes (cache line), in non-cacheable SRAM2 */
+__attribute__((aligned(32), section(".dma_buffer")))
+static uint8_t uart_dma_tx[256];
+
+__attribute__((aligned(32), section(".dma_buffer")))
+static uint8_t uart_dma_rx[256];
+\end{lstlisting}
+
+%======================================================================
+\section{The \texttt{const} and \texttt{volatile} Type Modifiers}
+%======================================================================
+
+These two modifiers terrify beginners and yet are absolutely fundamental
+in embedded. They are independent: a variable can be \texttt{const},
+\texttt{volatile}, both, or neither.
+
+\subsection{\texttt{const}: ``the program promises not to write through this''}
+
+\begin{itemize}[leftmargin=*]
+    \item Tells the compiler the value will not change \emph{through this
+    name}. Allows the compiler to put it in read-only memory (Flash) and to
+    propagate the value into uses.
+    \item For pointers, position matters:
+        \begin{itemize}
+            \item \texttt{const int *p}: pointer to const int. \texttt{*p}
+            is read-only, \texttt{p} can be reassigned.
+            \item \texttt{int * const p}: const pointer to int. \texttt{p}
+            cannot be reassigned, \texttt{*p} is mutable.
+            \item \texttt{const int * const p}: both.
+        \end{itemize}
+    \item Read it right-to-left: ``\texttt{p} is a const pointer to a const int''.
+    \item \texttt{const} lookup tables in \texttt{.rodata} save precious RAM.
+\end{itemize}
+
+\subsection{\texttt{volatile}: ``the value may change without the compiler knowing''}
+
+The compiler is allowed to assume that if you don't write to a variable,
+its value doesn't change between reads. \texttt{volatile} explicitly
+revokes that assumption. The compiler must emit an actual load from memory
+every time you read it, and an actual store every time you write it. It
+can't cache it in a register, can't elide ``redundant'' reads, can't reorder
+across it freely.
+
+When you need it:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Memory-mapped hardware registers.} The peripheral changes
+    them behind your back.
+    \item \textbf{Variables shared with an ISR.} The ISR may write between
+    two reads in main code.
+    \item \textbf{Variables shared between cores / DMA / another bus master.}
+    \item \textbf{Variables modified by \texttt{setjmp}/\texttt{longjmp}
+    or signal handlers.}
+\end{enumerate}
+
+\subsection{\texttt{const volatile} --- yes, really}
+
+A read-only status register: you can read it (compiler must do real load
+every time), but you must not write it. Example: a hardware ``revision ID''
+register.
+\begin{lstlisting}[style=C]
+#define CHIP_REV (*(const volatile uint32_t *)0x1FFF7A10)
+\end{lstlisting}
+
+\subsection{Famous \texttt{volatile} mistakes}
+
+\begin{lstlisting}[style=C]
+/* WRONG -- compiler may optimise this to an infinite check that never sees the flag change */
+int flag = 0;
+void ISR(void) { flag = 1; }
+void wait(void) { while (!flag); }
+
+/* RIGHT */
+volatile int flag = 0;
+\end{lstlisting}
+
+\begin{warning}
+\texttt{volatile} does \emph{not} make accesses atomic. Reading a 32-bit
+\texttt{volatile} on a 32-bit MCU is one instruction (atomic), but a 64-bit
+volatile is two stores. Sharing data between an ISR and main code wider
+than the bus width still requires a critical section.
+\end{warning}
+
+%======================================================================
+\section{Mandatory Content of \texttt{.c} and \texttt{.h} Files}
+%======================================================================
+
+C's compilation model is file-by-file. Each \texttt{.c} (\emph{translation
+unit}) is compiled independently and must therefore see declarations of
+everything it references from elsewhere. \texttt{.h} files are how you share
+those declarations.
+
+\subsection{Header (\texttt{.h}) file content}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Include guard} (or \texttt{\#pragma once}).
+    \item \texttt{\#include}s for types this header uses (and \emph{only}
+    those --- minimise transitive bloat).
+    \item \texttt{typedef}s, \texttt{enum}s, and \texttt{struct} declarations
+    that callers need to know about.
+    \item \texttt{extern} declarations for globals exposed by the module.
+    \item Function \textbf{prototypes} for the module's public API.
+    \item Macros and inline functions that are part of the API.
+    \item \emph{No definitions}: no function bodies (except \texttt{static
+    inline}), no variable storage. A definition in a header pulled into
+    multiple \texttt{.c} files yields multiple-definition link errors.
+\end{itemize}
+
+\begin{lstlisting}[style=C, caption={A clean header skeleton}]
+#ifndef SENSOR_TEMP_H
+#define SENSOR_TEMP_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef struct {
+    float celsius;
+    uint32_t timestamp_ms;
+} temp_sample_t;
+
+bool   temp_init(void);
+bool   temp_read(temp_sample_t *out);
+float  temp_to_kelvin(float c);
+
+#endif /* SENSOR_TEMP_H */
+\end{lstlisting}
+
+\subsection{Source (\texttt{.c}) file content}
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{\#include "own\_header.h"} (first, to catch missing includes).
+    \item \texttt{\#include} other headers as needed.
+    \item \textbf{Static} (file-local) helper functions and variables.
+    \item Definitions of the public functions declared in the header.
+    \item No \texttt{extern} unless absolutely necessary --- if you need
+    something external, declare it in a header.
+\end{itemize}
+
+\subsection{Function prototyping}
+
+A \textbf{prototype} declares a function's name, return type, and parameter
+types without a body:
+\begin{lstlisting}[style=C]
+int compute(int x, int y);   /* prototype */
+\end{lstlisting}
+
+Why it is mandatory in good embedded code:
+\begin{itemize}[leftmargin=*]
+    \item Without a prototype, the compiler assumes \texttt{int} return type
+    and applies the old K\&R promotion rules to arguments. Pass a
+    \texttt{float} to an unprototyped function and it's silently broken.
+    \item It catches type mismatches at the call site.
+    \item Modern C demands prototypes (\texttt{-Wmissing-prototypes},
+    \texttt{-Wstrict-prototypes}) and treats \texttt{f()} differently from
+    \texttt{f(void)} in C (the former still means ``unspecified args'').
+\end{itemize}
+
+\begin{note}
+Rule of thumb: \emph{every} non-\texttt{static} function in a \texttt{.c}
+file has a matching prototype in a \texttt{.h} file. Every \texttt{static}
+function has a prototype near the top of its \texttt{.c} file so functions
+can call each other freely without forward-declaration headaches.
+\end{note}
+
+%======================================================================
+\section{Peripheral Representation in the Memory Map}
+%======================================================================
+
+In a microcontroller, peripherals (UART, SPI, GPIO, TIM, ADC, ...) are not
+accessed via I/O instructions like on x86. They are \textbf{memory-mapped}:
+each peripheral has a block of addresses that, when read or written by the
+CPU, actually interact with the hardware.
+
+\subsection{Three flavours of register}
+
+Almost every peripheral exposes three categories:
+
+\begin{description}[leftmargin=*, style=nextline]
+    \item[Data register (DR).] Where the payload lives. Reading the UART
+    DR yields the received byte. Writing it queues a byte to transmit.
+    \item[Status register (SR).] Read-only flags reporting what the
+    peripheral is doing: ``TX buffer empty'', ``RX byte available'',
+    ``overrun error'', ``transmission complete''. You consult these to
+    decide when to act.
+    \item[Control register (CR).] Read/write bits that configure the
+    peripheral: enable, baud rate, parity, interrupt enables, DMA enables,
+    polarity, etc.
+\end{description}
+
+Larger peripherals add more (BRR for baud, GTPR for guard time, etc.) but
+the DR/SR/CR pattern is the spine.
+
+\subsection{Accessing registers from C: the typedef-struct trick}
+
+Vendor headers (e.g.\ \texttt{stm32f4xx.h}) define each peripheral as a
+\texttt{typedef}'d struct whose field offsets match the hardware layout.
+A \texttt{\#define} maps a pointer at the peripheral's base address.
+
+\begin{lstlisting}[style=C, caption={Simplified USART definition}]
+typedef struct {
+    __IO uint32_t SR;    /* 0x00: Status register      */
+    __IO uint32_t DR;    /* 0x04: Data register        */
+    __IO uint32_t BRR;   /* 0x08: Baud rate register   */
+    __IO uint32_t CR1;   /* 0x0C: Control register 1   */
+    __IO uint32_t CR2;   /* 0x10: Control register 2   */
+    __IO uint32_t CR3;   /* 0x14: Control register 3   */
+    __IO uint32_t GTPR;  /* 0x18: Guard time/prescaler */
+} USART_TypeDef;
+
+#define USART2 ((USART_TypeDef *) 0x40004400)
+
+/* __IO expands to "volatile" -- absolutely critical here */
+\end{lstlisting}
+
+Using it is then natural C:
+\begin{lstlisting}[style=C]
+while (!(USART2->SR & USART_SR_TXE)) { /* wait */ }
+USART2->DR = byte;
+\end{lstlisting}
+
+\begin{keyidea}
+The \texttt{\_\_IO}/\texttt{volatile} qualifier is non-negotiable on
+peripheral registers. Without it, the compiler will optimise away your
+poll loop or fold multiple writes into one --- and the chip will behave
+incomprehensibly.
+\end{keyidea}
+
+\subsection{Bit fields you'll meet}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{r/w bits}: standard read/write.
+    \item \textbf{r-only bits}: writes ignored. Status bits often.
+    \item \textbf{w-only bits}: reads undefined. Control sequences sometimes.
+    \item \textbf{rc\_w0 / rc\_w1 (read, clear by writing 0/1)}: a flag is set
+    by hardware; you clear it by writing the specified value back. Very
+    common for interrupt flags.
+    \item \textbf{rs (set by reading)}: reading a register can change state
+    (e.g.\ reading UART DR clears RXNE). This is why ``just looking at it''
+    in the debugger can change behaviour.
+\end{itemize}
+
+%======================================================================
+\section{STM32CubeIDE}
+%======================================================================
+
+STM32CubeIDE is ST Microelectronics' official Eclipse-based IDE for their
+STM32 family. It is the most common environment in coursework because it
+bundles everything you need and is free.
+
+\subsection{What's inside}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Editor / build system.} Standard Eclipse CDT with managed
+    Makefile generation.
+    \item \textbf{Toolchain.} The \texttt{arm-none-eabi-} GCC family,
+    pre-configured.
+    \item \textbf{CubeMX (integrated).} A graphical configurator: you pick
+    your chip, drag pins to peripherals, set clock trees, enable middleware
+    (FreeRTOS, LwIP, FatFS, USB), and it \emph{generates} the initialisation
+    C code, the linker script, and the startup file.
+    \item \textbf{Debugger.} GDB front-end, talks to ST-Link / J-Link probes,
+    supports breakpoints, watches, peripheral register view, RTOS-aware
+    task list.
+    \item \textbf{HAL/LL libraries.} Shipped as source so you can read and
+    modify them.
+\end{itemize}
+
+\subsection{Typical workflow}
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{New project} $\rightarrow$ pick board or MCU.
+    \item In the \emph{Pinout \& Configuration} view, enable peripherals
+    (e.g.\ ``USART2 in Asynchronous mode'', ``TIM3 in PWM Generation on CH1'').
+    \item In \emph{Clock Configuration}, set your core, AHB, APB1, APB2
+    clocks. Mismatches here are the source of many ``my UART speaks
+    gibberish'' bugs.
+    \item Click \emph{Generate Code}. The IDE produces \texttt{main.c}
+    (with markers like \texttt{USER CODE BEGIN}/\texttt{END} you must
+    write inside, otherwise re-generation overwrites your edits),
+    \texttt{stm32xxxx\_hal\_msp.c}, the startup, and the linker script.
+    \item Add your application code inside the user markers.
+    \item Build. Connect probe. \emph{Debug} button flashes and starts
+    a debug session.
+\end{enumerate}
+
+\subsection{FreeRTOS integration}
+
+Inside CubeMX, enable \emph{Middleware $\rightarrow$ FREERTOS}. You get:
+\begin{itemize}[leftmargin=*]
+    \item Pre-configured \texttt{FreeRTOSConfig.h}.
+    \item CMSIS-OS wrapper around FreeRTOS for portability.
+    \item GUI to declare tasks, queues, mutexes, timers; CubeMX emits the
+    \texttt{osThreadNew()} etc.\ calls.
+    \item Automatic re-assignment of SysTick to FreeRTOS (and a different
+    timer to HAL's tick source --- a classic pitfall).
+\end{itemize}
+
+%======================================================================
+\section{HAL vs.\ LL Libraries; Callbacks; Weak Symbols}
+%======================================================================
+
+ST ships two parallel driver libraries for STM32 peripherals. Knowing
+which is which and when to use which is half the battle.
+
+\subsection{HAL (Hardware Abstraction Layer)}
+
+\begin{itemize}[leftmargin=*]
+    \item High-level, ``opinionated'' API: \texttt{HAL\_UART\_Transmit(\&huart2,
+    buf, len, timeout)}.
+    \item Hides peripheral state behind ``handles'' (\texttt{UART\_HandleTypeDef}).
+    \item Same API across the whole STM32 family --- code portability between
+    chips.
+    \item Provides blocking, interrupt, and DMA variants of every operation.
+    \item \textbf{Drawbacks:} larger code size, more cycles per call,
+    sometimes opaque (you can't easily tell which registers it touches),
+    the state machines occasionally have surprises (e.g.\ ``HAL\_BUSY''
+    returned when you didn't expect).
+\end{itemize}
+
+\subsection{LL (Low-Level)}
+
+\begin{itemize}[leftmargin=*]
+    \item Thin, inline wrappers over register accesses:
+    \texttt{LL\_USART\_TransmitData8(USART2, byte);}
+    \item No state machines; almost no overhead --- often compiles to the
+    same instructions as direct register code.
+    \item Header-only, can be mixed with HAL on the same project.
+    \item \textbf{Drawbacks:} you handle state yourself; less portability
+    across families; less ``one-liner'' style operations.
+\end{itemize}
+
+\begin{note}
+Common pragmatic choice: HAL for \emph{configuration} (cleaner, runs once
+at boot), LL or raw registers for \emph{hot paths} (ISRs, tight loops).
+\end{note}
+
+\subsection{Interrupt handling through HAL/LL}
+
+\textbf{With HAL.} You enable the IRQ in CubeMX. The IRQ handler in
+\texttt{stm32xxxx\_it.c} calls e.g.\ \texttt{HAL\_UART\_IRQHandler(\&huart2)},
+which detects which event fired, processes it, and then calls a
+\emph{callback} that you override:
+\begin{lstlisting}[style=C]
+/* In your code: */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *h)
+{
+    if (h->Instance == USART2) {
+        rx_byte_ready = 1;
+    }
+}
+\end{lstlisting}
+
+\textbf{With LL.} You write the IRQ handler directly:
+\begin{lstlisting}[style=C]
+void USART2_IRQHandler(void)
+{
+    if (LL_USART_IsActiveFlag_RXNE(USART2)) {
+        rx_buf[rx_head++] = LL_USART_ReceiveData8(USART2);
+    }
+}
+\end{lstlisting}
+
+\subsection{Callbacks: the concept}
+
+A \textbf{callback} is a function pointer that some library code will call
+when an event occurs. The library defines \emph{when}, you define \emph{what}.
+HAL uses callbacks pervasively for ISR events --- it provides the dispatch,
+you write the handler.
+
+\subsection{Weak symbols}
+
+ST declares the default callback as ``weak'':
+\begin{lstlisting}[style=C]
+__attribute__((weak)) void HAL_UART_RxCpltCallback(UART_HandleTypeDef *h)
+{
+    UNUSED(h);
+    /* default: do nothing */
+}
+\end{lstlisting}
+
+A \textbf{weak symbol} is overridable: if any other translation unit defines
+the same symbol \emph{without} \texttt{weak}, the linker uses the strong one
+and silently ignores the weak one. If nobody defines it, the weak default
+is used. This is how default ISR handlers and default callbacks work:
+\begin{itemize}[leftmargin=*]
+    \item Vendor provides a weak \texttt{Default\_Handler} as the address of
+    every ISR vector slot. Spurious interrupts thus land in a sensible (if
+    boring) infinite loop instead of executing garbage.
+    \item You define a strong \texttt{TIM3\_IRQHandler} and the linker
+    transparently replaces the weak default.
+\end{itemize}
+
+\begin{keyidea}
+Weak symbols let a library ship sensible defaults while letting any user
+project override them without modifying library files. They are the C
+equivalent of ``virtual methods with a default implementation''.
+\end{keyidea}
+
+%======================================================================
+\section{Sensor Interfacing: NTC Thermistor Example}
+%======================================================================
+
+A sensor produces a physical quantity (temperature, light, pressure) that
+must be converted to a digital number. For a passive \textbf{analog sensor}
+like an NTC thermistor, the path is:
+\[
+\text{Temperature} \longrightarrow \text{Resistance}
+\longrightarrow \text{Voltage} \longrightarrow \text{ADC code}
+\longrightarrow \text{Temperature (in software)}
+\]
+
+\subsection{NTC: what it is}
+
+An NTC (\emph{Negative Temperature Coefficient}) thermistor is a resistor
+whose resistance decreases as temperature increases. A 10 k$\Omega$ NTC has
+$R = 10\,\mathrm{k}\Omega$ at 25\,$^\circ$C, perhaps 32\,k$\Omega$ at
+0\,$^\circ$C and 4\,k$\Omega$ at 60\,$^\circ$C. The relationship is
+strongly nonlinear, usually approximated by the \textbf{Beta equation}:
+\[
+\frac{1}{T} = \frac{1}{T_0} + \frac{1}{\beta}\ln\!\left(\frac{R}{R_0}\right)
+\]
+where $T$ is in Kelvin, $T_0 = 298.15$\,K, $R_0$ is the resistance at
+$T_0$, and $\beta$ (Beta) is a material constant in the datasheet
+(typically 3000--4500\,K).
+
+A more accurate (and more compute-hungry) model is the \emph{Steinhart--Hart}
+equation:
+\[
+\frac{1}{T} = A + B\ln(R) + C(\ln R)^3.
+\]
+
+\subsection{Resistance-to-voltage: the voltage divider}
+
+The ADC reads voltage, not resistance. The simplest converter is a
+\textbf{voltage divider}: NTC in series with a known reference resistor
+$R_f$, the junction feeding the ADC.
+
+\begin{center}
+\begin{tabular}{c}
+\texttt{Vcc ---[ R\_f ]---+---[ NTC ]--- GND} \\
+\texttt{\hspace{36mm}|} \\
+\texttt{\hspace{36mm}---> ADC input (V\_adc)}
+\end{tabular}
+\end{center}
+
+By the divider rule:
+\[
+V_{\text{adc}} = V_{cc} \cdot \frac{R_{NTC}}{R_f + R_{NTC}}
+\quad \Rightarrow \quad
+R_{NTC} = R_f \cdot \frac{V_{\text{adc}}}{V_{cc} - V_{\text{adc}}}.
+\]
+
+The ADC then produces a code $D = \frac{V_{\text{adc}}}{V_{\text{ref}}}
+\cdot (2^N - 1)$ where $N$ is the resolution. If $V_{\text{ref}} = V_{cc}$
+they cancel out:
+\[
+R_{NTC} = R_f \cdot \frac{D}{(2^N - 1) - D}.
+\]
+
+\subsection{Design choices}
+
+\begin{itemize}[leftmargin=*]
+    \item Choose $R_f$ near $R_0$ to centre the divider's sensitive region
+    around your temperature of interest.
+    \item Watch self-heating: current through the NTC heats it. Keep the
+    bias current small ($<0.1$ mA usually).
+    \item ADC noise: take multiple samples and average; or use the MCU's
+    oversampling feature.
+    \item Decoupling: a small capacitor (e.g.\ 10\,nF) across the NTC
+    smooths the input to the ADC sample-and-hold.
+\end{itemize}
+
+%======================================================================
+\section{Fixed-Point vs.\ Floating-Point}
+%======================================================================
+
+How you represent fractional numbers has \emph{huge} performance and
+accuracy implications on small MCUs.
+
+\subsection{Floating-point: IEEE 754}
+
+A float is sign $\cdot$ mantissa $\cdot 2^{\text{exponent}}$, encoded in
+32 bits (\texttt{float}) or 64 bits (\texttt{double}).
+\begin{itemize}[leftmargin=*]
+    \item Huge dynamic range ($\approx 10^{-38}$ to $10^{+38}$ for float).
+    \item Relative precision: ~7 decimal digits for float, ~15 for double.
+    \item Arithmetic is non-associative (\texttt{(a+b)+c} $\neq$
+    \texttt{a+(b+c)} in general).
+\end{itemize}
+
+\textbf{Hardware support} (FPU): Cortex-M4F/M7/M33 have a single-precision
+FPU. \texttt{float} ops are one or a few cycles. Double precision is
+software-emulated on M4F (slow), one-cycle on M7 with double-precision FPU.
+
+\textbf{Without an FPU} (Cortex-M0/M0+/M3, AVR), all float arithmetic is
+implemented in software --- a single multiplication costs hundreds of cycles
+and \emph{kilobytes} of code (\texttt{libgcc} routines).
+
+\subsection{Fixed-point: integers with an implied scale}
+
+Pick a scale factor (power of two for efficiency) and interpret integers
+as multiples of it. \textbf{Q-format} names them: \texttt{Q16.16} means
+32 bits, 16 integer bits, 16 fractional bits, so the LSB represents
+$2^{-16}$.
+
+\begin{itemize}[leftmargin=*]
+    \item Addition/subtraction: plain integer add/sub.
+    \item Multiplication of \texttt{Qm.n} by \texttt{Qm.n} gives
+    \texttt{Q(2m).(2n)} --- you must shift right by $n$ to renormalise
+    (and use 64-bit intermediate to avoid overflow).
+    \item Division: shift left by $n$ first, then integer divide.
+\end{itemize}
+
+\subsection{When to use which}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Cortex-M0/M3, AVR, no FPU}: fixed-point almost always.
+    \item \textbf{Cortex-M4F+}: single-precision float is fine for most
+    things and easier to reason about. Stick to \texttt{float}, not
+    \texttt{double}, to keep using the FPU.
+    \item \textbf{DSP / filtering at high rate}: fixed-point (often
+    \texttt{Q15} or \texttt{Q31}) lets you use the SIMD/DSP instructions
+    (Cortex-M4/M7 DSP extension, ARM CMSIS-DSP library).
+    \item \textbf{Algorithms with wide dynamic range}: float, unless you
+    really know your numeric range.
+\end{itemize}
+
+\begin{warning}
+Beware of accidental promotions. \texttt{x / 2} with integer \texttt{x}
+is integer division; \texttt{x / 2.0} promotes to double, drags in the
+double-precision soft-float library, and bloats your binary. Write
+\texttt{x / 2.0f} or just \texttt{x >> 1}.
+\end{warning}
+
+%======================================================================
+\section{FreeRTOS Best Practices: Tasks, Queues, Events}
+%======================================================================
+
+\textbf{FreeRTOS} is a small preemptive RTOS. It gives you tasks (with
+priorities), inter-task communication primitives, and synchronisation
+primitives. The kernel is tiny (a few kB) and well understood.
+
+\subsection{Tasks}
+
+A \textbf{task} is a function with its own stack and priority that runs as
+if it owns the CPU. The scheduler picks the highest-priority \emph{ready}
+task and runs it; if a task blocks (waits on a queue, sleeps, waits on a
+semaphore), the next-highest ready task runs.
+
+Best practices:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Each task does one thing well.} ``UART RX task'',
+    ``Motor control task'', ``Display update task''. Resist the temptation
+    to make one giant task with a state machine.
+    \item \textbf{Tasks block, they don't poll.} A loop with \texttt{vTaskDelay}
+    is still polling. Block on the actual event (queue receive, semaphore
+    take). The scheduler can then run other work or enter low-power.
+    \item \textbf{Assign priorities by deadline criticality, not
+    importance.} A 1-ms control loop is higher priority than the LCD
+    redraw, even if the LCD ``feels'' more important.
+    \item \textbf{Size stacks deliberately.} Use
+    \texttt{uxTaskGetStackHighWaterMark} to measure actual usage.
+    Allocate a bit of headroom but not megabytes.
+    \item \textbf{Avoid \texttt{vTaskDelay} for timing of work.} Use
+    \texttt{vTaskDelayUntil} for periodic tasks --- it compensates for the
+    execution time of the loop body, giving you actual period accuracy.
+\end{itemize}
+
+\subsection{Queues}
+
+A \textbf{queue} is a thread-safe FIFO. Producers \texttt{xQueueSend},
+consumers \texttt{xQueueReceive}; both can block with timeouts.
+
+\begin{itemize}[leftmargin=*]
+    \item Pass copies of small structures through queues, not pointers to
+    stack-local data.
+    \item Use queues to convert ISR events into task work:
+    \texttt{xQueueSendFromISR} in the ISR, \texttt{xQueueReceive} in the
+    consumer task. The ISR stays short; the heavy work happens in task
+    context.
+    \item Use \texttt{portYIELD\_FROM\_ISR(xHigherPriorityTaskWoken)} at
+    the end of the ISR so the consumer task can run immediately if it has
+    higher priority than the interrupted task.
+\end{itemize}
+
+\subsection{Events and other primitives}
+
+\begin{description}[leftmargin=*, style=nextline]
+    \item[Binary semaphore.] One-bit signal. ``Something happened, go do it.''
+    Released from ISR, taken by a task.
+    \item[Counting semaphore.] Counts resources or events.
+    \item[Mutex.] Mutual exclusion, with \emph{priority inheritance}
+    (a low-prio task holding the mutex temporarily inherits the priority of
+    a high-prio waiter, to avoid priority inversion).
+    \item[Event group.] A 24-bit set of flags; a task can wait for ``any of
+    these bits'' or ``all of these bits''. Good for ``wait for either
+    serial-done or timeout''.
+    \item[Direct task notifications.] The cheapest of all --- a per-task
+    32-bit value with built-in semaphore semantics. Use them when only one
+    task is waiting; they avoid allocating a queue/semaphore object.
+\end{description}
+
+\begin{warning}
+Two notorious classes of RTOS bugs: \textbf{priority inversion} (use mutexes,
+not binary semaphores, for resource protection) and \textbf{stack overflow}
+(turn on \texttt{configCHECK\_FOR\_STACK\_OVERFLOW = 2} during development).
+\end{warning}
+
+%======================================================================
+\section{Timer Peripheral: Prescaler and Period}
+%======================================================================
+
+A hardware timer is, at its core, a counter clocked from the system clock
+(possibly divided). It counts from 0 up to a programmable maximum, then
+either wraps or stops, and emits events (interrupt, DMA request, output
+toggle) at programmable points.
+
+\subsection{The two knobs}
+
+\begin{description}[leftmargin=*, style=nextline]
+    \item[Prescaler (PSC).] An integer divider applied to the timer's
+    input clock before it reaches the counter. If the timer clock is
+    $f_{\text{clk}}$ and the prescaler is $\text{PSC}$, the counter ticks
+    at
+    \[
+    f_{\text{count}} = \frac{f_{\text{clk}}}{\text{PSC} + 1}.
+    \]
+    (The +1 is because the register value 0 means ``divide by 1''.)
+    \item[Period / Auto-Reload Register (ARR).] The value at which the
+    counter wraps (or the event fires). The update event happens every
+    $\text{ARR}+1$ counter ticks, so the update frequency is
+    \[
+    f_{\text{update}} = \frac{f_{\text{clk}}}{(\text{PSC}+1)(\text{ARR}+1)}.
+    \]
+\end{description}
+
+\subsection{Worked example}
+
+Goal: produce a 1\,kHz tick from a 72\,MHz timer clock.
+\[
+\frac{72\,000\,000}{1\,000} = 72\,000 \text{ counter ticks per period}.
+\]
+A single 16-bit ARR maxes at 65535, so 72\,000 won't fit. Insert a small
+prescaler:
+\begin{itemize}[leftmargin=*]
+    \item PSC = 71 $\Rightarrow$ counter ticks at $72\text{MHz}/72 = 1$ MHz.
+    \item ARR = 999 $\Rightarrow$ update event every 1000 ticks
+    $\Rightarrow$ 1\,kHz. Done.
+\end{itemize}
+
+\subsection{What you actually do with timers}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Periodic interrupt} (``tick''). Set PSC and ARR, enable
+    update interrupt, run a handler at fixed cadence.
+    \item \textbf{PWM output} (Output Compare mode). Counter compares
+    against another register (CCR). Output flips at compare match,
+    resets at ARR wrap $\Rightarrow$ duty cycle = CCR/(ARR+1).
+    \item \textbf{Input capture}. Latch the counter value on an edge of
+    an input pin --- measure pulse widths, frequencies, etc.
+    \item \textbf{Encoder mode}. Two inputs decoded as quadrature: counter
+    automatically tracks position of a rotary encoder.
+    \item \textbf{Triggering ADC / DMA.} Timers can request a DMA transfer
+    or start an ADC conversion at exact moments without CPU involvement.
+    Foundation of high-rate, jitter-free signal acquisition.
+\end{itemize}
+
+%======================================================================
+\section{Power Electronics from Scratch}
+%======================================================================
+
+Before the switching sections, the handful of device ideas they assume ---
+built from the bottom up. Nothing new, just the floor.
+
+\textbf{A transistor is a controlled valve.} A GPIO sources a few mA at
+3.3\,V; motors/heaters/lamps want amps at 12--48\,V. You don't drive the
+load from the pin --- you drive a transistor that drives the load. The
+\emph{control terminal} (gate/base) is the handle the pin works for almost
+nothing; the \emph{main path} (drain--source / collector--emitter) is the
+pipe that carries the load current.
+
+\textbf{Two kinds of valve.} A \emph{MOSFET} is \emph{voltage}-operated:
+gate voltage (vs.\ its source) above $V_{th}$ opens the channel, and holding
+it open costs $\approx$\,no current (a ``logic-level'' FET opens at 3.3\,V).
+A \emph{BJT} is \emph{current}-operated: $I_C=\beta I_B$ in the active region
+($\beta\approx$\,50--200), and it needs continuous base current to stay on.
+That difference is why MOSFETs dominate switching and why a BJT's base drive
+is a real design step (below).
+
+\textbf{What turns a MOSFET on: gate-to-\emph{source}.} The channel opens
+when $V_{GS}=V_G-V_S\ge V_{th}$ --- never gate-to-ground. So the whole
+question is \emph{where the source sits}. Source at ground (low-side): a
+3.3\,V pin is 3.3\,V of $V_{GS}$, trivial. Source up at Vcc (high-side): the
+gate must go \emph{above} Vcc (a 12\,V rail wants $\sim$17\,V), which a logic
+pin can't make alone.
+
+\begin{note}
+``It's gate-to-source, so where's the source?'' is the seed of the entire
+low-/high-side story --- and the reason smart high-side drivers exist.
+\end{note}
+
+\textbf{BJT switch = overdriven into saturation.} An amplifier stays in the
+active region; a \emph{switch} is driven hard until $V_{CE}$ bottoms out at
+$V_{CE(\text{sat})}\approx0.1$--0.3\,V (saturation --- a closed switch with a
+small drop). For margin you \emph{overdrive}: design to a low ``forced
+$\beta$'' of 10--20 (feed $\sim I_C/15$) instead of the real
+$\beta\approx100$. That ``forced $\beta$'' is what sizes the base resistor
+(below).
+
+\textbf{Making a voltage above the rail.} A high-side N-channel gate needs a
+voltage above Vcc that isn't on the board --- so a \emph{charge pump} /
+\emph{bootstrap} capacitor makes one. You rarely build it; it lives inside
+integrated high-side switches.
+
+\textbf{Why switching wastes energy.} Fully on, $V\approx0$; fully off,
+$I\approx0$ --- so $P=VI\approx0$ in both steady states. Loss happens only
+\emph{during the flip}, when $V$ and $I$ are briefly both present, giving the
+$P_{\text{sw}}\approx\frac12 VI\,(t_r+t_f)\,f_{\text{sw}}$ you'll meet in the
+next section. Faster edges $=$ less loss but more EMI.
+
+\begin{note}
+\textbf{Heat is Ohm's law renamed:} $\Delta T = P\cdot R_{th}$ (power
+$\leftrightarrow$ current, $R_{th}\leftrightarrow$ resistance, temperature
+rise $\leftrightarrow$ voltage), so $T_j=T_{\text{amb}}+P\,R_{th}$. A heatsink
+is just a smaller $R_{th}$.
+\end{note}
+
+%======================================================================
+\section{Load Switches: Low-Side and High-Side}
+%======================================================================
+
+A \textbf{load switch} is a transistor used to turn a load (motor, LED,
+heater, relay coil) on and off. Where in the circuit you place the
+switch fundamentally changes the design.
+
+\subsection{Low-side switch}
+
+The switch sits \emph{between the load and ground}. The load is
+permanently connected to Vcc.
+
+\begin{center}
+\texttt{Vcc ---[ LOAD ]---+--- DRAIN/COLLECTOR \;\; SWITCH \;\; SOURCE/EMITTER ---GND}
+\end{center}
+
+To turn on:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{NMOS as low-side}: drive the gate above the source (which is
+    at ground), so $V_{GS} \approx V_{cc-logic}$. A 3.3\,V logic gate is
+    plenty for a ``logic-level'' NMOS (e.g.\ AO3400, IRLML2502).
+    \item \textbf{NPN BJT as low-side}: drive base current into the base
+    resistor; $V_{BE} \approx 0.7$\,V; saturate the transistor.
+\end{itemize}
+
+\textbf{Advantages.} The control signal is referenced to ground, same as
+the MCU. Easy to drive directly from a GPIO. Simple gate/base drive.
+
+\textbf{Disadvantages.} The load is ``hot'' even when off (Vcc always
+present at one terminal). If the load's downstream terminal accidentally
+shorts to ground, the switch can't protect against it. Common-ground
+EMI considerations.
+
+\subsection{High-side switch}
+
+The switch sits \emph{between Vcc and the load}. The load is permanently
+connected to ground.
+
+\begin{center}
+\texttt{Vcc --- SOURCE/EMITTER \;\; SWITCH \;\; DRAIN/COLLECTOR ---+--- [ LOAD ] --- GND}
+\end{center}
+
+To turn on:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{PMOS as high-side}: gate must be \emph{below} source by
+    $|V_{GS(th)}|$. The source is at Vcc, so you must pull the gate down ---
+    typically to GND. Driving a PMOS from a 3.3\,V MCU with Vcc=12\,V requires
+    a level-shifter (an NPN/NMOS pulling the gate low).
+    \item \textbf{NMOS as high-side}: source sits at the load, near Vcc when
+    on. To keep it on you need $V_{GS} > V_{th}$, i.e.\ gate at $V_{cc} +
+    V_{GS}$. That voltage doesn't exist on the board --- you must create it
+    with a \emph{charge pump} or a \emph{bootstrap capacitor}.
+\end{itemize}
+
+\textbf{Advantages.} The load is fully isolated from Vcc when off ---
+safer. A short-to-ground at the load side simply pulls more current
+through the switch, which can be sensed and limited. Many industrial
+applications mandate high-side switching for this reason.
+
+\textbf{Disadvantages.} Drive circuitry is more complex. This is why
+integrated high-side drivers exist (next section).
+
+\subsection{NPN BJT as low-side switch: detailed walk-through}
+
+An NPN turns on when $V_{BE} \gtrsim 0.6$\,V \emph{and} sufficient base
+current flows. The relationship is:
+\[
+I_C = \beta \cdot I_B,
+\]
+but only in the active region. To use a BJT as a switch we want it
+\emph{saturated} (very low $V_{CE}$, $\sim 0.2$\,V), which requires
+\textbf{overdriving} the base, typically $I_B \approx I_C / 10$ (a
+``forced beta'' of 10, well below the device's $\beta$ of perhaps 100).
+
+%======================================================================
+\section{Integrated High-Side Drivers}
+%======================================================================
+
+Because high-side NMOS driving is non-trivial, vendors sell single-chip
+\textbf{high-side drivers}. Examples: BTS50xx (Infineon Profet), TPS272xx
+(TI), VN5T family. Inside one tiny package you get:
+
+\begin{itemize}[leftmargin=*]
+    \item A power NMOS (or a clever PMOS stack) for the switch itself.
+    \item A \textbf{charge pump} that generates a gate voltage above Vcc
+    so the NMOS can be fully enhanced.
+    \item \textbf{Current sense} (a small ``sense FET'' mirror or a low-side
+    shunt) producing a proportional analog output (\texttt{IS} pin) for the
+    MCU's ADC.
+    \item \textbf{Current limit / over-current shutdown}, often configurable
+    via an external resistor.
+    \item \textbf{Thermal shutdown} when the die overheats.
+    \item \textbf{Reverse-battery protection} in automotive variants.
+    \item \textbf{Open-load detection} (in OFF state) for diagnostics.
+    \item \textbf{Slew rate control}: the driver shapes the gate drive so
+    that turn-on/turn-off is neither too slow (high $P = V \cdot I$ during
+    transition $\Rightarrow$ heat) nor too fast (EMI, ringing on inductive
+    loads).
+\end{itemize}
+
+\subsection{Why turn-on/turn-off speed matters}
+
+\paragraph{Too slow.} The transistor spends time in its active region with
+both high $V_{DS}$ and high $I_D$ --- power dissipation $P = V \cdot I$ peaks.
+A 1\,A, 12\,V load with a 1\,$\mu$s transition wastes $\sim 6\,\mu$J per
+edge. At 100\,kHz PWM that's 1.2\,W just from switching losses.
+
+\paragraph{Too fast.} Sharp $dI/dt$ across parasitic inductance generates
+voltage spikes that ring, radiate (EMI), and can damage the FET or trigger
+spurious turn-ons of the opposite-side switch in a bridge.
+
+\paragraph{Slew-rate-controlled drivers} compromise by ramping the gate
+charging current, achieving a controlled (often programmable) $dV/dt$.
+
+%======================================================================
+\section{Switch Power Dissipation; NPN Base Resistor Sizing}
+%======================================================================
+
+\subsection{Where the power goes (MOSFET)}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Conduction loss}: $P_{\text{cond}} = I_D^2 \cdot R_{DS(on)}$.
+    Buy a FET with low $R_{DS(on)}$ at the gate voltage you can supply.
+    \item \textbf{Switching loss}: energy dissipated during transitions.
+    Roughly $P_{\text{sw}} = \frac{1}{2} V_{DS} \cdot I_D \cdot (t_r + t_f)
+    \cdot f_{\text{sw}}$.
+    \item \textbf{Gate-drive loss}: $P_{\text{gate}} = Q_g \cdot V_{GS} \cdot
+    f_{\text{sw}}$. Modest at low frequencies, can matter at MHz.
+    \item \textbf{Body-diode loss}: in synchronous topologies, current may
+    briefly flow through the body diode, which has a higher $V_F$ than the
+    channel.
+\end{itemize}
+
+\subsection{Where the power goes (BJT)}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Conduction loss}: $P_{\text{cond}} = V_{CE(\text{sat})} \cdot I_C$.
+    $V_{CE(\text{sat})}$ is typically 0.1--0.3\,V. Unlike a MOSFET this is
+    a voltage drop, not an ohmic resistance: doubling the current does not
+    quadruple the loss, only doubles it.
+    \item \textbf{Base drive loss}: $P_{\text{base}} = V_{BE} \cdot I_B$
+    (small but non-zero).
+\end{itemize}
+
+\subsection{Sizing an NPN base resistor}
+
+Given:
+\begin{itemize}[leftmargin=*]
+    \item GPIO logic level: $V_{\text{IO}}$ (e.g.\ 3.3\,V).
+    \item BJT $V_{BE}$ when saturated: $\approx 0.7$\,V.
+    \item Desired collector current: $I_C$.
+    \item Worst-case $\beta_{\min}$ from the datasheet (use this, not
+    typical!).
+    \item Overdrive factor (forced beta): pick $\beta_{\text{forced}} = 10$
+    or so, to guarantee saturation across temperature/lot variation.
+\end{itemize}
+
+Required base current:
+\[
+I_B = \frac{I_C}{\beta_{\text{forced}}}.
+\]
+Voltage available across the resistor:
+\[
+V_R = V_{\text{IO}} - V_{BE}.
+\]
+Resistor value:
+\[
+R_B = \frac{V_R}{I_B} = \frac{V_{\text{IO}} - V_{BE}}{I_C / \beta_{\text{forced}}}.
+\]
+
+\textbf{Numerical example.} 3.3\,V GPIO, load 100\,mA, choose
+$\beta_{\text{forced}} = 10$:
+\[
+I_B = 10\,\text{mA}, \quad V_R = 2.6\,\text{V}, \quad
+R_B = 260\,\Omega.
+\]
+Use 220\,$\Omega$ (next standard E12 value down --- slight over-drive is
+fine). Check the GPIO can source 10\,mA (most can, but at the edge of
+spec).
+
+\begin{warning}
+\textbf{Never} drive a BJT base directly from a GPIO without a series
+resistor --- you'll exceed the device's max base current and either kill
+the BJT or kill the GPIO output stage.
+\end{warning}
+
+%======================================================================
+\section{Full-Bridges and Shoot-Through}
+%======================================================================
+
+A \textbf{full-bridge (H-bridge)} is four switches arranged so a DC
+voltage can be applied to a load in either polarity. The classical use:
+driving a DC motor forwards and backwards.
+
+\subsection{Topology}
+
+\begin{center}
+\begin{tabular}{cc}
+\multicolumn{2}{c}{Vcc} \\
+\multicolumn{2}{c}{|}\\
++---+---+ & +---+---+ \\
+| Q1| & | Q3| \\
++---+ & +---+ \\
+\multicolumn{2}{c}{ \quad MOTOR \quad } \\
++---+ & +---+ \\
+| Q2| & | Q4| \\
++---+---+ & +---+---+ \\
+\multicolumn{2}{c}{|} \\
+\multicolumn{2}{c}{GND} \\
+\end{tabular}
+\end{center}
+
+Q1 (high-side left) and Q4 (low-side right) on $\Rightarrow$ current flows
+left-to-right through the load. Q3 + Q2 on $\Rightarrow$ current right-to-left.
+PWM Q1 vs.\ Q2 (or Q3 vs.\ Q4) and you have direction + speed control.
+
+\subsection{Shoot-through: the cardinal sin}
+
+\textbf{Shoot-through} occurs when Q1 \emph{and} Q2 are both on
+simultaneously (or Q3 and Q4), creating a direct Vcc-to-GND path through
+two transistors. Currents of hundreds of amps can flow for microseconds.
+The result: instant catastrophic failure --- molten silicon, flames,
+all of the above.
+
+This is rarely a steady-state problem (control logic won't intentionally
+command it). It happens during \emph{transitions}: when you ask Q1 to
+turn off and Q2 to turn on, the real-world devices don't switch
+instantly. If Q1's turn-off is slower than Q2's turn-on, there's an
+overlap window where both are partially on.
+
+\subsection{Protection: dead-time}
+
+The solution is \textbf{dead-time}: insert a short period where
+\emph{both} switches in a leg are off, between turning one off and
+turning the other on. During dead-time, current continues to flow through
+the body diodes of the off switches (or through external freewheel
+diodes). Typical dead-times: 100\,ns to a few \textmu s, depending on
+device speed.
+
+\subsubsection{Timer-based dead-time}
+
+Advanced timers in modern MCUs (STM32 TIM1, TIM8) support
+\textbf{complementary outputs with programmable dead-time} natively. You
+configure one PWM channel and the timer automatically generates a
+complement on a second pin, separated by your specified dead-time
+(register DTG --- ``Dead-Time Generator''). No software fiddling, hardware
+guarantees the gap.
+
+\subsubsection{Driver-based dead-time}
+
+Half-bridge gate driver chips (e.g.\ IR2104, DRV8301, UCC27210) include
+built-in dead-time insertion. You provide a single PWM signal; the
+driver generates the high-side and low-side gate signals with an
+internal interlock that physically prevents both from being asserted
+simultaneously.
+
+\begin{keyidea}
+Belt-and-braces is normal: \emph{both} the timer and the driver enforce
+dead-time. A software bug that disables one is then still caught by the
+other.
+\end{keyidea}
+
+%======================================================================
+\section{Digital-Interface Sensors: The Accelerometer Example}
+%======================================================================
+
+A \textbf{digital-interface sensor} performs the analog-to-digital
+conversion internally and exposes its measurements via a digital bus
+(I\textsuperscript{2}C, SPI, sometimes UART or a 1-wire variant). The MCU
+just reads registers.
+
+\subsection{Why digital is nicer}
+
+\begin{itemize}[leftmargin=*]
+    \item No noisy analog wires snaking across the board.
+    \item Calibration done once at the factory and baked into the sensor.
+    \item Configurable filters, ranges, sample rates accessible via
+    registers.
+    \item Built-in features: temperature compensation, motion-detection
+    interrupts, FIFOs.
+\end{itemize}
+
+\subsection{MEMS accelerometer, briefly}
+
+An accelerometer measures linear acceleration on 1, 2, or 3 axes. A MEMS
+device contains a tiny silicon proof mass on springs (etched into the
+chip); acceleration deflects the mass, changing capacitances measured by
+internal circuitry. Output: $g$-force values in the configured range
+(e.g.\ $\pm 2g, \pm 4g, \pm 8g, \pm 16g$).
+
+\subsection{Example: hard disk drives and free-fall detection}
+
+Many laptop hard drives ship with a 3-axis accelerometer. Use case: if
+the drive senses \emph{free fall} (all three axes near 0\,$g$
+simultaneously, i.e.\ no gravity reaction --- only happens in free fall),
+firmware concludes the drive is falling. Within milliseconds it parks the
+head off the platter, so when the laptop hits the floor the platter and
+head do not collide.
+
+The detection is built into the sensor: registers configure a free-fall
+threshold and duration; an interrupt pin asserts when the condition
+holds. The MCU's ISR triggers the head-park sequence. The whole loop is
+fast precisely because the heavy lifting is in the sensor.
+
+Other classic uses: smartphones (rotate the display), pedometers,
+vibration monitoring of industrial machinery, automotive airbag
+triggering.
+
+%======================================================================
+\section{I\textsuperscript{2}C and SPI Protocols}
+%======================================================================
+
+These are the two ubiquitous embedded buses for chip-to-chip
+communication on a board. Memorise them.
+
+\subsection{I\textsuperscript{2}C (Inter-Integrated Circuit)}
+
+A 2-wire, multi-master, multi-slave bus.
+
+\begin{description}[leftmargin=*, style=nextline]
+    \item[Wires] SDA (Serial Data, bidirectional, open-drain) and SCL
+    (Serial Clock, open-drain). Pulled up to Vcc by external resistors
+    (typically 4.7--10\,k$\Omega$).
+    \item[Speeds] Standard 100\,kHz, Fast 400\,kHz, Fast+ 1\,MHz,
+    High-Speed 3.4\,MHz.
+    \item[Addressing] Each slave has a 7-bit address (some support 10-bit).
+    A transaction starts with the master pulling SDA low while SCL is high
+    (\emph{START condition}), then clocking out the 7-bit address + 1 R/W bit.
+    The matching slave \texttt{ACK}s by pulling SDA low for one clock.
+    \item[Direction] Set by the R/W bit. Reads typically require: send
+    register address (write phase), \emph{repeated START}, then read.
+    \item[Stop] Master releases SDA from low to high while SCL is high
+    (\emph{STOP condition}).
+\end{description}
+
+\textbf{Advantages.} Only 2 wires for an entire bus of many devices.
+Standard, supported everywhere. Software-emulatable on plain GPIO.
+
+\textbf{Drawbacks.} Slower than SPI. Open-drain means rise time is limited
+by the pull-up resistor and the bus capacitance. Bus can hang if a slave
+holds SDA low (recovery: toggle SCL nine times). Addressing collisions
+between vendors --- watch the address map of every chip you put on the bus.
+
+\subsection{SPI (Serial Peripheral Interface)}
+
+A 4-wire (sometimes 3-wire), full-duplex, master-slave bus.
+
+\begin{description}[leftmargin=*, style=nextline]
+    \item[Wires] SCK (clock, master $\rightarrow$ slave), MOSI (Master Out
+    Slave In), MISO (Master In Slave Out), and one CS (Chip Select) per
+    slave (active low). Push-pull, no pull-ups needed.
+    \item[Speeds] Tens of MHz easily, up to 100+ MHz on capable devices.
+    \item[Operation] Master asserts CS, then shifts bits out on MOSI on
+    one clock edge while the slave shifts back on MISO on the other edge.
+    Every clock = one bit each direction; full-duplex.
+    \item[Modes] Four combinations of clock polarity (CPOL) and clock phase
+    (CPHA): Mode 0 to Mode 3. The chosen mode must match between master and
+    slave. Wrong mode = nothing works, often silently.
+    \item[Daisy-chaining] Some devices can be chained: MISO of one goes to
+    MOSI of the next. Useful for shift registers.
+\end{description}
+
+\textbf{Advantages.} Very fast, simple state machine, no addressing
+overhead, push-pull drives don't care about pull-ups.
+
+\textbf{Drawbacks.} One CS line per slave (more pins). No standard
+framing or error detection --- it's just shift registers, you pay
+attention to bytes. No flow control --- slave must be ready every clock.
+No defined slave-to-master interrupt mechanism (often a separate GPIO
+``INT'' pin handles this).
+
+\subsection{Comparison cheat sheet}
+
+\begin{tabular}{p{0.18\linewidth} p{0.39\linewidth} p{0.39\linewidth}}
+\toprule
+& \textbf{I\textsuperscript{2}C} & \textbf{SPI} \\
+\midrule
+Wires (n slaves) & 2 total & 3 + n (one CS each) \\
+Speed & up to a few MHz & tens to 100+ MHz \\
+Multi-master & Yes (arbitration) & No (one master typically) \\
+Addressing & 7/10-bit on bus & Per-slave CS line \\
+Duplex & Half (one direction at a time) & Full \\
+Framing/ACK & Built-in & None (raw bits) \\
+Drive type & Open-drain + pull-up & Push-pull \\
+Typical use & Sensors, EEPROMs, small ICs & SD card, displays, ADCs, fast sensors \\
+\bottomrule
+\end{tabular}
+
+\subsection{In an STM32 (peripherals view)}
+
+Each MCU has hardware peripherals (e.g.\ \texttt{I2C1, I2C2, I2C3,
+SPI1, SPI2, SPI3}) with their own DMA channels and interrupts.
+Workflow:
+\begin{enumerate}[leftmargin=*]
+    \item In CubeMX, enable the peripheral, set pins, baud/speed, SPI
+    mode, optional DMA.
+    \item In code, use HAL or LL: \texttt{HAL\_I2C\_Mem\_Read(\&hi2c1,
+    addr<<1, reg, 1, buf, n, timeout)} for I\textsuperscript{2}C reads.
+    \item For high-rate transfers, use the \texttt{\_DMA} variants and
+    handle the completion callback to chain the next transaction.
+\end{enumerate}
+
+\begin{note}
+A subtle gotcha: HAL's \texttt{HAL\_I2C\_*} functions expect the slave
+address \emph{shifted left by 1}, because the LSB is used internally for
+the R/W bit. Forgetting the shift gives ``no ACK'' and confused debugging.
+\end{note}
+
+%======================================================================
+\section*{Closing Thoughts}
+%======================================================================
+\addcontentsline{toc}{section}{Closing Thoughts}
+
+This syllabus is broad on purpose: firmware design lives at the
+intersection of \emph{C language}, \emph{computer architecture},
+\emph{electronics}, and \emph{real-time systems}. The recurring themes:
+
+\begin{itemize}[leftmargin=*]
+    \item Embedded code runs against \emph{physics}, not a forgiving OS.
+    Determinism, resource budgets, and correct hardware interaction
+    matter more than elegance.
+    \item Understanding what the compiler and linker actually do
+    (sections, optimisation, calling conventions, weak symbols) is not
+    optional --- it's the only way to debug ``the C is fine but the chip
+    is wrong''.
+    \item Hardware peripherals are just registers. Once you read the
+    reference manual you can drive anything; libraries are conveniences,
+    not magic.
+    \item Patterns repeat: ISR pushes data to a queue, task processes it;
+    timer triggers ADC via DMA; weak default ISR overridden by your
+    strong one; mutex protects shared state with priority inheritance.
+    Recognising these patterns lets you read any embedded code base.
+\end{itemize}
+
+Now go flash a board and break something. That's how this stuff actually
+sticks.
+
+\end{document}

@@ -1,0 +1,87 @@
+#separator:Semicolon
+#html:false
+What three things together make up a measurement?;A value, a unit, and an uncertainty. The bare number alone can never support a yes/no decision.
+Fundamentally, a measurement is a comparison of what?;The ratio of the measurand to a unit. So the unit must mean the same for everyone (the SI guarantees this) and the instrument must be shown to still agree with it (traceability does this).
+What did the 2019 SI redefinition change?;Every base unit is now fixed by assigning an exact numerical value to a fundamental constant of nature, instead of relying on a physical artefact.
+Why are artefact-based unit definitions (like the IPK kilogram) a problem?;Artefacts drift over decades, can be damaged, and there is only one master — so the whole world's scale depends on a single guarded object that cannot be recreated.
+Did the 2019 redefinition change the size of any unit?;No. A kilogram still weighs a kilogram — only the definition changed, trading a man-made object for an unchanging constant.
+Why are the second and the metre defined in that order?;The second is fixed by the caesium transition, then with c fixed exactly the metre becomes the distance light travels in 1/c seconds. Several units chain off one another this way.
+Name the seven SI base units and their quantities.;second (time), metre (length), kilogram (mass), ampere (current), kelvin (temperature), mole (amount of substance), candela (luminous intensity).
+Which constant fixes the second?;The caesium hyperfine transition frequency, ∆ν_Cs = 9 192 631 770 Hz.
+Which constant fixes the metre?;The speed of light, c = 299 792 458 m/s.
+Which constant fixes the kilogram?;The Planck constant, h = 6.626 070 15 × 10⁻³⁴ J·s.
+Which constant fixes the ampere?;The elementary charge, e = 1.602 176 634 × 10⁻¹⁹ C.
+Which constant fixes the kelvin?;The Boltzmann constant, k = 1.380 649 × 10⁻²³ J/K.
+Which constant fixes the mole?;The Avogadro constant, N_A = 6.022 140 76 × 10²³ /mol.
+Which constant fixes the candela?;The luminous efficacy, K_cd = 683 lm/W.
+What is a derived unit?;A product of powers of the base units — e.g. m/s, m², or a named one like the volt, ohm, hertz, newton, joule, watt.
+Express the volt in SI base units.;V = W/A = kg·m²/(A·s³).
+What is a dimensional check and why do it?;Tracking units through a formula. If the units on the two sides don't match, the equation is wrong — the cheapest sanity test there is.
+List the steps for taking and reporting a measurement.;Define the measurand and conditions, choose method and instrument, account for instrument loading, read value+unit+uncertainty, propagate uncertainty if computed from several readings, report x₀ ± ∆x with unit and conditions.
+What is metrological traceability?;The property whereby a result can be related to a stated reference through a documented, unbroken chain of calibrations, each contributing to the uncertainty.
+Give the traceability chain from the SI down to your bench.;BIPM and the defining constants → national metrology institutes (primary standards) → accredited calibration labs (reference instruments) → your working instrument with its certificate and due date.
+What breaks traceability?;Any undocumented or out-of-date link. An expired calibration sticker means the chain to the SI is no longer proven — the reading may be fine but you can no longer defend it.
+Direct vs indirect measurement method?;Direct compares the measurand against a reference of the same kind, read in one step (ruler, voltmeter). Indirect computes it from other measured quantities via a relation like R = V/I, so every input's uncertainty propagates.
+Absolute vs relative uncertainty?;Absolute is x = x₀ ± ∆x (same units as x). Relative is ε_x = ∆x/x₀ (dimensionless, often a percentage).
+Uncertainty rule for a sum or difference?;Add the absolute uncertainties: ∆y = ∆a + ∆b.
+Uncertainty rule for a product or ratio?;Add the relative uncertainties: ε_y = ε_a + ε_b.
+How does a power y = xⁿ affect relative uncertainty?;It multiplies it by n: ε_y = n·ε_x. For example V² makes ε_V count twice.
+What is catastrophic cancellation?;Subtracting two nearly equal numbers — the difference y₀ shrinks while ∆y stays the size of a sum, so ε_y = ∆y/y₀ becomes huge even from excellent inputs.
+Why does timing 10 pendulum swings reduce the period uncertainty?;T = t₁₀/10. Dividing by the exact integer 10 also divides the absolute uncertainty, while only t₁₀ carries uncertainty.
+General first-order uncertainty propagation for y = f(x₁..xₙ)?;∆y = Σ |∂f/∂x_i|·∆x_i — the sum of the absolute contributions from each input.
+Measuring R_in from V_M = V_S·R_in/(R+R_in): why is R ≈ R_in best?;R_in is computed from the difference V_S − V_M. If R_in ≫ R then V_M→V_S (denominator→0) and if R_in ≪ R then V_M→0 — both explode the error. The sweet spot is R ≈ R_in.
+How does a CRT place the beam?;Deflection: x_ndiv = V_x/K_x and y_ndiv = V_y/K_y, where K_x and K_y are the deflection coefficients in V/div.
+What normally drives the horizontal axis of an analog scope?;An internal sawtooth time base.
+Two conditions for a stable analog-scope image?;A periodic vertical signal, and a time base synchronised by the trigger (level + edge) so each sweep redraws the same picture.
+Why does a non-integer ratio of time-base period to signal period give an unstable image?;Each sweep starts at a different phase of the signal, so successive traces land in different places and the picture drifts. A trigger or single-shot capture fixes it.
+Vertical scale selection rule (8 divisions)?;Choose the smallest 1-2-5 standard K_y ≥ (V_max − V_min)/8, so the signal fills the screen and reading error is minimised.
+Horizontal scale selection rule (12 divisions)?;To show N periods choose the smallest 1-2-5 standard K_x ≥ N·T/12.
+A scope reading is a product of what, and what is its relative uncertainty?;V = K·L (scale × length in divisions), so ε_V = ε_K + ε_L — the calibration error plus the reading error.
+What sets the calibration error ε_K and the reading error ε_L of a scope reading?;ε_K comes from the datasheet (typically 1-3 percent). ε_L = δL/L, with δL ≈ 0.1-0.2 div set by the graticule and trace thickness.
+Why does filling the screen improve a scope reading?;δL is roughly constant, so the reading error ε_L = δL/L shrinks as the trace gets bigger. In time, measure several periods and divide.
+State the Nyquist sampling condition for a DSO.;Sample at f_S > 2·f_B, where f_B is the highest signal frequency. Otherwise the trace aliases to a wrong signal with no warning.
+Points per period needed for a faithful DSO trace, by interpolator?;About 20-25 with no interpolator, ~10 with a linear one, 3-4 with a sinc one. Rule of thumb: sample at ≥ 10× the signal frequency.
+What is aliasing, and what is the fold-back frequency?;A signal above Nyquist folds to a lower apparent frequency f_a = |f_in − k·f_S|, with k the integer putting f_a in [0, f_S/2]. The interpolator then draws a clean but wrong sine.
+Why is aliasing especially dangerous?;The displayed alias is a clean, stable, correct-amplitude sine, so nothing looks broken. Two different inputs can also give identical samples, destroying information.
+What does a ×10 compensated probe do, and at what cost?;With R_s·C_s = R_i·C_p it forms a frequency-independent 1/10 divider that multiplies the usable bandwidth by 10 — at the cost of a ×10 attenuation.
+Scope rise time in terms of bandwidth?;T_B = 0.35/B for a single-pole bandwidth B.
+How do the scope's rise time and the true edge combine?;In quadrature: T_meas = √(T_B² + T_Rise²), so T_Rise = √(T_meas² − T_B²).
+Why is measuring an edge near the scope's own rise time inaccurate?;T_Rise = √(T_meas² − T_B²) becomes a near-cancellation under the root when T_meas ≈ T_B, so ε_TRise explodes. Use a faster scope.
+How does a voltmeter's finite input resistance load a source?;R_i forms a divider with the source resistance R_g: V_m = V_g·R_i/(R_i+R_g). Keep R_i ≫ R_g.
+How does a DMM measure a resistance?;It forces a known current I_S through the resistor and reads the resulting voltage, reporting R = V_meas/I_S.
+2-wire vs 4-wire (Kelvin) resistance measurement?;2-wire reads R_x + 2R_c, so the lead resistance adds in. 4-wire sense leads carry no current and drop no voltage, so the meter reads R_x exactly.
+When must you use 4-wire sensing?;When R_x is small (down to ohms and below), where the 2R_c lead-resistance error becomes a large fraction of the reading.
+Why does a 4-wire sense lead's own resistance not matter?;The sense inputs feed a high-impedance amplifier, so negligible sense current flows. No current through the lead resistance means no voltage drop across it.
+What does an AC meter report, and how do true-RMS vs cheap meters differ?;The RMS value. A true-RMS meter integrates v² directly. Cheaper meters sense peak or rectified average and assume a sine via a fixed multiplier, so they read wrongly for non-sinusoids.
+RMS, rectified-average and form factor of a sine V_p·sin(ωt)?;V_RMS = 0.707·V_p, V_avg = 0.637·V_p, and V_RMS = 1.11·V_avg.
+RMS of a signal that has a DC component?;V_RMS = √(V_RMS,AC² + V_DC²) — combine the AC and DC parts quadratically.
+What does an average-sensing sine-calibrated meter read for a 10 V square wave, vs the truth?;It shows 1.11 × V_p = 11.1 V (wrongly applying the sine factor), while the true RMS of a square wave is V_p = 10 V.
+What is the bench cross-check method of reading every quantity twice?;Read each value once from the DSO's automatic engine (datasheet uncertainty) and once by eye in divisions (~0.1 div). Agreement between the two confirms the measurement is sound.
+Why must a ×10 probe be compensated, and how is it done?;It forms an RC network with the scope input that distorts fast edges. Adjust the trimmer on the 1 kHz square reference until the tops are flat — no overshoot and no rounded droop.
+Why does a budget DSO's sample rate halve when you enable another channel?;It has one ADC time-division-multiplexed across the active channels, so the rate divides as channels are added (e.g. 1 GSa/s → 500 → 250 MSa/s).
+On a scope, which is measured better — time or amplitude — and why?;Time and frequency, with ε ~ 10⁻³ percent set by the timebase. Amplitude is far worse (several percent), limited by the gain accuracy.
+Why can a measured rise time at high frequency be the instrument, not the signal?;Near the scope's own rise time t_rise = 0.35/BW the bandwidth limits the edge you can see. Always check a measured edge against the scope bandwidth before trusting it.
+What is referred uncertainty?;A third way to express uncertainty — dimensionless like relative, but taken with respect to a conventional value such as the instrument's full scale rather than the reading itself. Common in instrument specs (percent of full scale).
+What are the two ways to interpret an uncertainty range?;Either the measurand surely lies inside the stated range (a hard bound), or it lies inside with a certain probability (a statistical confidence). The two views lead to different ways of combining uncertainties.
+What are the main sources that contribute to a measurement's uncertainty?;The instrument itself, the reference (which has its own uncertainty), the instrument perturbing the system it measures, the act of reading, influence quantities acting on the measurand, an imperfect model, and a measurand that is not perfectly defined.
+What is an influence quantity?;A quantity other than the measurand that affects the result — for example temperature changing the length of a measured bar. It must be controlled or accounted for, or it inflates the uncertainty.
+What are the four steps of designing a measurement?;1) Define the target and the required uncertainty. 2) Define the measurand(s), their characteristics and intrinsic uncertainty. 3) Define how to measure (instruments, procedure, environment, data processing). 4) Estimate the uncertainty.
+Why can a measurement goal be impossible to meet?;If the required uncertainty is smaller than the measurand's intrinsic uncertainty or than what the best available instrument and method can achieve, no procedure reaches the goal — you must relax the requirement or change approach.
+What is the intrinsic uncertainty of a measurand?;The irreducible uncertainty from the measurand not being perfectly defined — a metal bar's length depends on temperature and which two points you pick, so it has no single exact value regardless of the instrument.
+What three kinds of measurement are distinguished by how the value is obtained?;Direct (read straight from an instrument), indirect (computed from one or more different direct measurements via a relation), and the average of several measurements of the same quantity (a statistical estimate).
+What is a transducer, and why does an instrument contain one?;A transducer converts the measurand into a different quantity the instrument can compare against its local standard — a thermocouple turning temperature into a voltage. The measured quantity is then not the same kind as the measurand.
+How do computer-science binary multiples differ from SI prefixes?;SI prefixes are powers of ten (1 kB = 1000 B) while binary prefixes are powers of two (1 KiB = 1024 B, then MiB, GiB). Using k/M/G loosely for 1024 is a common source of confusion.
+How is phase obtained from a measured delay on a scope?;By proportion to the period — phase : 2π = delay : T, so phase = 2π·delay/T radians, or 360°·delay/T in degrees.
+What are the three functional blocks of a Digital Sampling Oscilloscope?;An A/D converter, an acquisition memory that stores the samples, and a digital processing/display stage that reconstructs and measures the waveform.
+What is amplitude quantization in a DSO, and its uncertainty?;The ADC rounds each sample to one of 2ⁿ levels (256 for 8 bits), adding a ±0.5 LSB quantization uncertainty. It is negligible only when the signal spans many levels (or the noise already exceeds about 1/3 LSB).
+What does a DSO's pre-trigger buffer let you see?;Because the DSO samples continuously into memory, it can display the signal from before the trigger instant (negative time) — something an analog scope, whose beam is off until the trigger, cannot do.
+What is the scope's XY mode used for?;It drives the horizontal axis with one channel and the vertical with another, plotting one signal against the other independent of time — useful for transfer functions and Lissajous figures (phase and frequency comparison).
+What is the scope's Roll mode, and when is it useful?;The waveform scrolls right-to-left without waiting for a trigger, like a paper chart recorder — useful for very low-frequency signals that would take too long to fill a triggered sweep.
+What do the DC, AC and GND input couplings do?;DC passes the signal unchanged (the default, especially for unipolar digital signals). AC blocks the DC component so you can zoom into a small ripple riding on a large offset. GND shows the zero reference line.
+What do the High-Res, Average and Peak acquisition modes do?;High-Res and Average reduce noise (Average by combining repeated acquisitions), while Peak-detect catches narrow glitches that ordinary sampling between points would miss. Normal is the plain sampled mode.
+What is display persistence, and why raise it?;How long each dot or trace stays on screen before fading. Raising it toward infinite accumulates many sweeps, revealing infrequent glitches, jitter, or the envelope of a modulated signal.
+Why is a BNC coaxial cable used for scope connections?;A central conductor inside a grounded shield rejects external noise (signal plus ground), and the bayonet connector gives a mechanically stable, repeatable contact.
+Why does a plain scope input act as a low-pass filter at high frequency?;The input capacitance Cp with the source resistance Rg forms an RC low-pass with corner f_t = 1/(2π·Rg·Cp) — about 32 MHz for Rg = 50 Ω and Cp = 100 pF — attenuating fast signals. A compensated probe pushes this corner up.
+What is the internal structure of a DMM measuring DC voltage?;A stable voltage reference, a high-impedance input amplifier, and a slow but low-noise integrating ADC — the integration averages out noise and mains pickup, which is why DC readings are very accurate.
+How does a DMM measure current, and what side effect does it have?;It passes the current through an internal shunt resistor and measures the voltage across it. That shunt drops a small burden voltage in series with the circuit, which can disturb the very current being measured.
+How is a DMM's accuracy usually specified?;As ±(a percent of the reading + a number of counts or percent of range), worse for AC than DC, and valid only if the meter is periodically calibrated against a traceable standard.

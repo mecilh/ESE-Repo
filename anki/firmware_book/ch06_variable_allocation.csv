@@ -1,0 +1,17 @@
+#separator:Semicolon
+#html:false
+What is a variable's storage duration, and the two kinds?;It determines the variable's lifetime and home. Static: globals, static locals, file-scope — exist for the whole program, one fixed address each in .data/.bss/.rodata. Automatic: ordinary locals and parameters — exist only while the function runs, on the stack or in registers.
+What is the stack and which way does it grow?;A region of RAM that grows and shrinks as functions are called and return. On ARM and x86 it grows downward, toward lower addresses.
+What is a stack frame?;The slice of stack an active function owns — holding its saved registers, the return address, and any locals that could not stay in registers.
+What do a function's prologue and epilogue do?;The prologue allocates the frame by subtracting from the stack pointer on entry. The epilogue releases it by restoring the stack pointer before returning.
+At -O0, where do local variables live?;Every local gets a stack slot, written and re-read at each use — lots of str/ldr — so you can inspect them in a debugger.
+At -O2, where do local variables often live?;Short-lived locals whose address is never taken are kept in registers, and constant-folding may remove them entirely — the function may have no stack frame at all.
+Why is the rule local variable lives on the stack only the unoptimised truth?;With optimisation, locals can live entirely in registers and vanish through constant-folding, so the stack frame shrinks or disappears — which is why optimised code is faster but harder to single-step.
+Why might a debugger show optimised out at -O2?;The local was promoted to a register or folded away, so it has no stack slot to read. The C semantics are unchanged — only the storage changed.
+How do you force a local to stay in real memory?;Take its address (&x) or declare it volatile — registers have no address, so either forces it onto the stack and keeps it inspectable.
+Why must memory-mapped registers be volatile?;Otherwise the optimiser would keep them in a register like any local, which for hardware is catastrophic — it would never re-read the live register value.
+How does RISC (ARM Cortex-M) tend to allocate locals?;A load/store architecture with many registers (13-16), so arithmetic is register-only and the compiler keeps lots of locals in registers, touching memory rarely. AAPCS passes the first four args in r0-r3 and returns in r0.
+How does CISC (x86) tend to allocate locals?;Few registers (8 on 32-bit) and instructions that operate directly on memory operands, so locals spill to the stack sooner. The 32-bit System V ABI even passed arguments on the stack by default.
+Why is stack overflow worse on a no-MMU MCU?;On a PC it triggers a clean page fault. On a no-MMU MCU the stack grows past its region and silently overwrites .bss or the heap, giving bizarre symptoms far from the cause.
+What embedded rules follow from the stack-overflow hazard?;Bound or ban recursion, avoid large local arrays (a 4 KB local buffer is 4 KB of stack), and budget per-task stacks carefully under an RTOS.
+Why is a large local array dangerous?;A local array is allocated on the stack the instant the function is entered (e.g. uint8_t line[512] needs 512 bytes immediately), so it can overflow a small task stack before doing any useful work.

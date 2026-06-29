@@ -1,0 +1,307 @@
+%=======================================================================
+%  IESE EXERCISE BOOK 2 -- OPERATIONAL AMPLIFIERS
+%  Problems to work on (no worked method); answers at the back.
+%  Companion to iese02_opamp_manual.tex.
+%=======================================================================
+\documentclass[11pt,a4paper,oneside]{book}
+\usepackage{iese_manual}
+
+\hypersetup{pdftitle={IESE Exercise Book 2 -- Operational Amplifiers}}
+
+% shorthands borrowed from the manual
+\newcommand{\op}{op-amp}
+\newcommand{\Ad}{A_d}
+\newcommand{\vd}{v_d}
+% answer-key helper
+\newcommand{\ans}[1]{\par\smallskip\noindent\textbf{#1}\quad\ignorespaces}
+
+\begin{document}
+\frontmatter
+
+\begingroup
+\thispagestyle{empty}\centering
+\vspace*{2.2cm}
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[0.5cm]
+{\Huge\bfseries\color{accent} Operational Amplifiers}\\[0.35cm]
+{\LARGE Exercise Book}\\[0.4cm]
+{\color{accent}\rule{\linewidth}{1.4pt}}\\[1.2cm]
+{\large IESE Exercise Book 2 of 3}\\[1.6cm]
+{\footnotesize Problems only --- attempt them first; answers (final results, no
+worked steps) are at the back. Use E12 values and quote realised errors.}
+\par\vspace*{\fill}
+\endgroup
+\clearpage
+
+\chapter*{How to use this book}
+\addcontentsline{toc}{chapter}{How to use this book}
+\markboth{How to use this book}{How to use this book}
+
+This is the problem set distilled from the \emph{Operational Amplifiers} solving
+manual. It contains \textbf{only exercises and their answers} --- no theory and no
+worked derivations. Each chapter mirrors a chapter of the manual, so when you are
+stuck on a \emph{method}, open the manual at the same chapter and read its
+Protocol and Worked Example.
+
+\begin{keyidea}
+Component-design exercises have more than one valid answer: any resistor pair
+with the right \emph{ratio} works. The key gives one E12 choice and the realised
+value; if yours differs but the ratio and realised error match, you are right.
+\end{keyidea}
+
+\tableofcontents
+\clearpage
+\mainmatter
+
+%=======================================================================
+\chapter{Circuits with the ideal Operational Amplifier}
+%=======================================================================
+
+\begin{exercise}[Non-inverting design, $G=3$]
+Design a non-inverting voltage amplifier of gain $A_V=3$. Pick
+$R_1=\qty{12}{\kilo\ohm}$, find $R_2$, give the nearest E12 value, and state the
+realised gain and its relative error.
+\end{exercise}
+
+\begin{exercise}[The five amplifiers]
+(a)~A non-inverting stage of $G=10000$ on an \op{} with $\Ad=10^5$: find $\beta$
+and the loop gain $T=\Ad\beta$, and comment.
+(b)~Is a non-inverting stage of $G=0.707$ possible?
+(c)~Give the resistor ratio $R_2/R_1$ for inverting gains $-3$, $-1$, $-0.707$.
+\end{exercise}
+
+\begin{exercise}[Transresistance amplifier]
+A current-to-voltage converter must map $I_S\in[0,\qty{20}{\milli\ampere}]$ to
+$V_{out}\in[0,\qty{-5}{\volt}]$. Find $R_2$ and state what the \op{} must be able
+to do.
+\end{exercise}
+
+%=======================================================================
+\chapter{The real Operational Amplifier}
+%=======================================================================
+
+\begin{exercise}[Does higher gain hurt?]
+An \op{} has $\Ad\in[100\text{k},500\text{k}]$. For a closed-loop gain
+$A_V=1000$, find the realised-gain spread and the relative uncertainty
+$\varepsilon_{A_V}$.
+\end{exercise}
+
+\begin{exercise}[Closed-loop impedances of a follower]
+An LM741 ($r_d=\qty{2}{\mega\ohm}$, $r_o=\qty{75}{\ohm}$, $\Ad=2\times10^5$) is
+wired as a unity-gain follower. Find $R_{in}$ and $R_{out}$.
+\end{exercise}
+
+\begin{exercise}[Lower bound on $R_2$ from $I_{MAX}$]
+$V_{PS}=\qty{15}{\volt}$, $I_{load}=\qty{20}{\milli\ampere}$, non-inverting
+$A_V=10$. (a)~Bound $R_2$ and give an E12 resistor pair.
+(b)~What does the bound become if the load only ever draws \qty{2}{\milli\ampere}?
+\end{exercise}
+
+\begin{exercise}[CMRR figure]
+A precision \op{} lists $\text{CMRR}_{dB}=\qty{120}{\dB}$ and $\Ad=10^6$. Find the
+common-mode gain $A_C$.
+\end{exercise}
+
+\begin{exercise}[Output swing into a load]
+$I_{MAX}=\qty{25}{\milli\ampere}$, $V_{MAX}=\qty{10}{\volt}$. Find the peak swing
+into (a)~$R_L=\qty{200}{\ohm}$ and (b)~$R_L=\qty{1}{\kilo\ohm}$, and (c)~the
+crossover load.
+\end{exercise}
+
+\begin{exercise}[A full $R_2$ window]
+$A_V=20$, $V_{\!OFF}=\qty{2}{\milli\volt}$, $I_{\!OFF}=\qty{20}{\nano\ampere}$,
+$V_{PS}=\qty{12}{\volt}$, $I_{load}=\qty{10}{\milli\ampere}$.
+(a)~Give the window for $R_2$ and pick a value.
+(b)~With $R_2=\qty{100}{\kilo\ohm}$ and $R_3=R_1\Vert R_2$, estimate the residual
+output offset.
+\end{exercise}
+
+%=======================================================================
+\chapter{Frequency response, stability and bandwidth}
+%=======================================================================
+
+\noindent\textit{Running device for this chapter:} $\Ad0=\qty{100}{\dB}$,
+$f_{p1}=\qty{20}{\kilo\hertz}$, $f_{p2}=\qty{1}{\mega\hertz}$.
+
+\begin{exercise}[Just stable]
+With no compensation: (a)~at which closed-loop gain is the stage \emph{just}
+stable ($\phi_M=45^\circ$)? (b)~Check $A_V=5000$ explicitly --- stable or not?
+\end{exercise}
+
+\begin{exercise}[Method 1 on a follower]
+The device is used as a \emph{voltage follower} and stabilised by Method~1
+(lower $\Ad$). Find the required attenuation $M$, the compensated $\Ad0$, and the
+frequency where $|T|$ now crosses \qty{0}{\dB}.
+\end{exercise}
+
+\begin{exercise}[Method 2.1 at $A_V=100$]
+Using an external compensation capacitor (Method~2.1) at $A_V=100$: where must the
+moved first pole $f_{p1}^{\,new}$ be placed, and what DC loop gain survives?
+\end{exercise}
+
+\begin{exercise}[GBWP: pass or fail?]
+A non-inverting stage needs $A_{V0}=25$ and a bandwidth $f_C=\qty{50}{\kilo\hertz}$
+from a part with GBWP $=\qty{1}{\mega\hertz}$. Does it meet spec? Give two fixes.
+\end{exercise}
+
+\begin{exercise}[Slew rate]
+An LM741 ($\text{SR}=\qty{0.5}{\volt\per\micro\second}$) must output a
+\qty{10}{\kilo\hertz} sine. (a)~Largest amplitude $V_p$ free of slewing?
+(b)~If a \qty{10}{\volt} peak is required, above what frequency does it slew?
+\end{exercise}
+
+%=======================================================================
+\chapter{Applications}
+%=======================================================================
+
+\begin{exercise}[Generalised adder/subtractor]
+Realise (a)~$v_{out}=-2v_1-3v_2-4v_3$ and (b)~the difference
+$v_{out}=6(v_1'-v_1'')$. Give the resistors (in terms of $R_f$) and the balancing
+element.
+\end{exercise}
+
+\begin{exercise}[Integrator response]
+A practical integrator has $RC=\qty{0.25}{\milli\second}$.
+(a)~Feed it a \qty{100}{\milli\volt} sine at \qty{500}{\hertz}: output amplitude
+and phase?
+(b)~Remove the DC-stabilising $R_2$ and take $I_{BIAS}=\qty{100}{\nano\ampere}$:
+starting from $0$, how long until the output reaches a \qty{12}{\volt} rail?
+\end{exercise}
+
+\begin{exercise}[Square wave to triangle]
+An integrator turns a $\pm\qty{1}{\volt}$, \qty{1}{\kilo\hertz} square wave into a
+\qty{2}{\volt} peak-to-peak triangle. Find the required $RC$, then pick $C$ and
+$R$.
+\end{exercise}
+
+%=======================================================================
+\chapter{The Operational Amplifier as a comparator}
+%=======================================================================
+
+\begin{exercise}[Bare comparator with noise]
+Build an inverting comparator on a single \qty{5}{\volt} supply.
+(a)~Choose an E12 divider from the rail giving $V_{REF}=\qty{2.0}{\volt}$.
+(b)~State the output rule.
+(c)~With noise $N_A=\qty{50}{\milli\volt}$, give the input band where the output
+is undefined and the minimum hysteresis a Schmitt replacement would need.
+\end{exercise}
+
+\begin{exercise}[Symmetric inverting Schmitt]
+Design an inverting Schmitt trigger with $V_{OH}=+12$, $V_{OL}=\qty{-12}{\volt}$
+and thresholds at $\pm\qty{2}{\volt}$.
+(a)~Find $V_{REF}$ and $R_2/R_1$ and pick E12 values.
+(b)~What is the largest noise amplitude it tolerates?
+\end{exercise}
+
+\begin{exercise}[Non-inverting Schmitt + source loading]
+Design a non-inverting Schmitt trigger with $V_{OH,OL}=\pm\qty{12}{\volt}$ and
+thresholds at $\pm\qty{3}{\volt}$.
+(a)~Find $V_{REF}$ and an E12 pair $R_1,R_2$; give the actual thresholds.
+(b)~The source has $R_S=\qty{1}{\kilo\ohm}$: what do the thresholds become, and
+what is the lesson?
+\end{exercise}
+
+\begin{exercise}[Symmetric astable]
+Design a \qty{10}{\kilo\hertz} astable with $V_{OH}=+12$, $V_{OL}=\qty{-12}{\volt}$
+and symmetric thresholds at half the output levels, $V_{S1,2}=\pm\qty{6}{\volt}$.
+Give $R_1,R_2$ and $R,C$.
+\end{exercise}
+
+\begin{exercise}[Triangle/square generator]
+Design a triangle/square generator for a \qty{1}{\kilo\hertz}, \qty{5}{\volt}
+peak-to-peak triangle with $V_{OH},V_{OL}=\pm\qty{10}{\volt}$. Give $R_1,R_2$
+(E12) and $R,C$.
+\end{exercise}
+
+%=======================================================================
+\chapter{Laboratory: Op-amp characterisation}
+%=======================================================================
+
+\begin{exercise}[Bandwidth- or slew-limited step?]
+On the bench an LM741 follower is driven with a small step and then a large step.
+The small step settles with a rise time set by $0.35/\text{BW}$; the large step
+ramps at a constant slope. Which mechanism limits each, and which rise time grows
+with the step height?
+\end{exercise}
+
+%=======================================================================
+\chapter{Answers}\label{ch:answers}
+%=======================================================================
+
+Final results only. Design exercises quote one valid E12 choice --- any pair with
+the same ratio is correct.
+
+\section*{Chapter 1 --- Circuits with the ideal Operational Amplifier}
+\ans{1.1}$R_2=\qty{24}{\kilo\ohm}$; nearest E12 $\qty{22}{\kilo\ohm}$ gives
+$G'=1+22/12=2.83$, relative error $\qty{5.6}{\percent}$.
+\ans{1.2}(a)~$\beta=10^{-4}$, $T=\Ad\beta=10$ --- small, so feedback benefits are
+weak. (b)~No: a non-inverting stage cannot give $|A_V|<1$. (c)~Ratios $3$, $1$,
+$0.707$.
+\ans{1.3}$R_2=\qty{250}{\ohm}$; the \op{} must source/sink the full
+\qty{20}{\milli\ampere} --- near typical output-current limits.
+
+\section*{Chapter 2 --- The real Operational Amplifier}
+\ans{2.1}$A_{V,\min}=990.1$, $A_{V,\max}=998.0$ (spread $7.9$),
+$\varepsilon_{A_V}\approx\qty{0.8}{\percent}$.
+\ans{2.2}$R_{in}\approx\qty{400}{\giga\ohm}$, $R_{out}\approx\qty{0.38}{\milli\ohm}$.
+\ans{2.3}(a)~$R_2>\qty{15}{\kilo\ohm}$; e.g.\ $R_2=\qty{18}{\kilo\ohm}$,
+$R_1=\qty{2}{\kilo\ohm}$. (b)~$R_2>\qty{150}{\kilo\ohm}$ (bound scales as
+$1/I_{load}$).
+\ans{2.4}$\text{CMRR}=10^{6}$, so $A_C=\Ad/\text{CMRR}=1$.
+\ans{2.5}(a)~$\qty{5}{\volt}$ (current-limited). (b)~$\qty{10}{\volt}$
+(supply-limited). (c)~$R_L^*=\qty{400}{\ohm}$.
+\ans{2.6}(a)~Lower bound \qty{24}{\kilo\ohm}, upper bound $\ll\qty{2}{\mega\ohm}$;
+$R_2=\qty{100}{\kilo\ohm}$ keeps a decade of margin both sides.
+(b)~$v_{out,OFF}\approx40+2=\qty{42}{\milli\volt}$ (offset \emph{voltage}
+dominates).
+
+\section*{Chapter 3 --- Frequency response, stability and bandwidth}
+\ans{3.1}(a)~$A_V=10^{66/20}\approx2000$ (just stable when $|T|=\qty{0}{\dB}$ at
+$f_{p2}$). (b)~$A_V=5000$: crossing near \qty{400}{\kilo\hertz}, below $f_{p2}$,
+so $\phi_M>45^\circ$ --- \textbf{stable}.
+\ans{3.2}$M=\qty{66}{\dB}$; compensated $\Ad0=\qty{34}{\dB}$ ($\approx50$);
+$|T|=\qty{0}{\dB}$ at $f_{p2}=\qty{1}{\mega\hertz}$ ($\phi_M=45^\circ$), but the DC
+loop gain is now only \qty{34}{\dB}.
+\ans{3.3}$f_{p1}^{\,new}=f_{p2}/T_0=10^6/10^3=\qty{1}{\kilo\hertz}$; the full
+\qty{60}{\dB} DC loop gain survives.
+\ans{3.4}$f_T=10^6/25=\qty{40}{\kilo\hertz}<\qty{50}{\kilo\hertz}$ ---
+\textbf{fails}. Fixes: (i)~faster part, GBWP $\ge\qty{1.25}{\mega\hertz}$;
+(ii)~cascade two $\times5$ stages ($f_T'=\qty{200}{\kilo\hertz}$ each).
+\ans{3.5}(a)~$V_p\le\qty{7.96}{\volt}$. (b)~$f\le\qty{7.96}{\kilo\hertz}$, so a
+\qty{10}{\volt} peak already slews at \qty{10}{\kilo\hertz}.
+
+\section*{Chapter 4 --- Applications}
+\ans{4.1}(a)~$R_i''=R_f/2,\,R_f/3,\,R_f/4$; add a $+$-side resistor $R_f/10$ to
+balance. (b)~$R_1'=R_1''=R_f/6$; add $R_2'=R_f$ to ground on the $+$ side (a
+difference amplifier).
+\ans{4.2}(a)~$|A|=1/(2\pi fRC)=1.27$: output \qty{127}{\milli\volt} at $+90^\circ$.
+(b)~$\mathrm{d}v/\mathrm{d}t=I_{BIAS}/C=\qty{10}{\volt\per\second}$, so
+$\approx\qty{1.2}{\second}$ to the rail.
+\ans{4.3}$RC=\qty{0.25}{\milli\second}$; e.g.\ $C=\qty{10}{\nano\farad}$,
+$R=\qty{25}{\kilo\ohm}$.
+
+\section*{Chapter 5 --- The Operational Amplifier as a comparator}
+\ans{5.1}(a)~$R_a=\qty{15}{\kilo\ohm}$ (top), $R_b=\qty{10}{\kilo\ohm}$ (bottom).
+(b)~Out high for $v_{in}<\qty{2.0}{\volt}$, low for $v_{in}>\qty{2.0}{\volt}$.
+(c)~Undefined for $\qty{1.95}{\volt}<v_{in}<\qty{2.05}{\volt}$; need
+$\Delta V_S>\qty{0.1}{\volt}$.
+\ans{5.2}(a)~$V_{REF}=0$, $R_2=5R_1$, e.g.\ $R_1=\qty{10}{\kilo\ohm}$,
+$R_2=\qty{47}{\kilo\ohm}$ (thresholds $\pm\qty{2.1}{\volt}$).
+(b)~Tolerates noise up to $N_A\approx\qty{2.1}{\volt}$ peak.
+\ans{5.3}(a)~$V_{REF}=0$, $R_2=4R_1$, e.g.\ $R_1=\qty{8.2}{\kilo\ohm}$,
+$R_2=\qty{33}{\kilo\ohm}$ (thresholds $\pm\qty{2.98}{\volt}$).
+(b)~$R_S$ adds to $R_1$: thresholds widen to $\pm\qty{3.35}{\volt}$ ($+12\%$) ---
+buffer the source or keep $R_1\gg R_S$.
+\ans{5.4}$R_1=R_2$ (e.g.\ both \qty{10}{\kilo\ohm}); $T=\tau\ln9=2.20\,\tau$, so
+$\tau=\qty{45.5}{\micro\second}$: $C=\qty{1}{\nano\farad}$,
+$R=\qty{47}{\kilo\ohm}$ ($f\approx\qty{9.7}{\kilo\hertz}$).
+\ans{5.5}$R_2=4R_1$, e.g.\ $R_1=\qty{10}{\kilo\ohm}$, $R_2=\qty{39}{\kilo\ohm}$
+($V_{pp}\approx\qty{5.1}{\volt}$); $RC=\qty{1}{\milli\second}$:
+$C=\qty{10}{\nano\farad}$, $R=\qty{100}{\kilo\ohm}$.
+
+\section*{Chapter 6 --- Laboratory: Op-amp characterisation}
+\ans{6.1}The small step is \emph{bandwidth-limited}
+($t_{10\text{--}90}=0.35/\text{BW}$, independent of step height); the large step
+is \emph{slew-rate-limited} ($t_{10\text{--}90}=0.8\,V_H/\text{SR}$, which grows
+with the step height $V_H$).
+
+\end{document}

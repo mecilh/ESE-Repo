@@ -1,0 +1,13 @@
+#separator:Semicolon
+#html:false
+How does a digital-interface sensor differ from an analog one like the NTC?;It contains its own ADC, calibration, and logic, and hands you ready-made numbers over a serial bus (SPI or I2C) — instead of putting the divider, ADC, filtering, and nonlinear maths on you.
+What are the advantages of a digital-interface sensor?;Noise immunity (digitised next to the transducer, only robust bits travel), on-chip factory calibration (reports real units), run-time configurability (range, data rate, filters), smart self-watching interrupts, and many devices sharing one bus.
+How does a MEMS accelerometer work?;A microscopic proof mass on silicon springs. Acceleration displaces the mass, changing a tiny capacitance, which on-chip electronics turn into a number. A 3-axis device reports ax, ay, az.
+Why does an accelerometer read 1 g at rest?;It senses the gravitational field too: at rest on a desk the vertical axis reads 1 g (≈ 9.81 m/s²), not zero.
+What typical registers does a digital accelerometer expose?;WHO_AM_I (a fixed ID byte, read first to confirm the device and bus), CTRL_REG* (enable axes, set data rate and full-scale range), OUT_X/Y/Z (latest samples), and INT_CFG/INT_SRC (configure and read the cause of the sensor's interrupt).
+Why do you read WHO_AM_I first?;It returns a known fixed ID byte, confirming the device is present and the bus is working before you trust any data.
+Why does an accelerometer read ~0 g on all axes in free fall?;Normally gravity shows as a persistent 1 g on the down axis, but a body in free fall accelerates with gravity — the proof mass and its frame fall together, so there is no relative deflection and the sensor goes weightless.
+How is free fall detected from accelerometer data?;Watch the magnitude |a| = √(ax² + ay² + az²) and trigger when it drops well below 1 g for a few milliseconds. Modern accelerometers implement this as a built-in free-fall interrupt firing within milliseconds.
+Why does the HDD free-fall detector park the heads?;A spinning drive's heads fly nanometres above the platters, so an impact can cause a head crash destroying data. Detecting the fall (within milliseconds, faster than the tens-to-hundreds of ms of the drop) lets firmware park the heads on a safe ramp before landing.
+Why compare the squared acceleration magnitude against a squared threshold?;To avoid a costly sqrt (and any FPU dependence) — compare mag2 < THRESH² directly. Also widen the products to int32 so squaring 16-bit values does not overflow.
+How does a digital sensor let the MCU stay asleep?;It has smart interrupts (motion, tap, free-fall): the sensor watches itself and wakes the MCU only on a threshold event, so the CPU need not poll and can sleep the rest of the time.

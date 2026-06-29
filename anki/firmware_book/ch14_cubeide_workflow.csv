@@ -1,0 +1,13 @@
+#separator:Semicolon
+#html:false
+What is STM32CubeIDE?;ST's free all-in-one environment that automates the tedious parts of a project while leaving you in control of the logic. Knowing the boundary between generated and your code is key.
+What four things does STM32CubeIDE bundle?;An Eclipse-based editor/IDE, the GNU Arm toolchain (arm-none-eabi-gcc/ld/gdb pre-configured), STM32CubeMX (a graphical configurator that generates init code), and a debugger front-end driving the on-chip debug unit via ST-Link.
+What are the steps of the config-first CubeIDE workflow?;Pick the target MCU/board, configure pins (Pinout), configure the clock tree, configure peripherals and middleware, generate code, then write your logic / build / flash / debug.
+What does picking the target MCU/board do for you?;Pins down memory sizes and the peripheral set, and gives a correct default linker script and startup file — the cross-compilation and section scaffolding, done for you.
+Why is configuring the clock tree not optional?;Every peripheral's timing — baud rates, timer periods — derives from the clocks. You set the desired core frequency and the tool solves the divider chain (or flags an impossible target).
+What does Generate Code produce?;The startup file, linker script, system_stm32xx.c (clock setup), the HAL/LL drivers, and main.c with all the MX_<periph>_Init() calls already wired up.
+What is the USER CODE contract?;Generated files have guarded regions marked /* USER CODE BEGIN x */ ... /* USER CODE END x */. Code between the markers survives re-generation, while code outside them is overwritten without warning when you regenerate.
+What is the number-one CubeMX beginner disaster?;Writing application code outside the USER CODE markers, then tweaking a pin in CubeMX and regenerating — which silently overwrites hours of work. Stay inside the lines, or put substantial code in your own separate modules.
+How does enabling FreeRTOS in CubeMX change the timebase?;By default the HAL uses SysTick for its millisecond tick, but FreeRTOS also wants SysTick for scheduling — so CubeMX moves the HAL timebase to a spare hardware timer to avoid the clash. It also wires in the FreeRTOS source and the CMSIS-RTOS wrapper.
+Does CubeIDE hide the machine from you?;No. It generates ordinary HAL-based C you can read line by line, mix with direct register access, or strip the HAL out entirely. It accelerates bring-up, and everything you learned about the underlying machine still applies.
+Why is your own app.c untouched by Generate Code, but main.c is not?;main.c is a generated file CubeMX manages (only USER CODE regions survive), while app.c is your own file CubeMX neither generates nor rewrites — so hand-written code is safest in your own .c/.h modules.

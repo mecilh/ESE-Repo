@@ -1,0 +1,8 @@
+#separator:Semicolon
+#html:false
+What does the digital-I/O-and-timers lab demonstrate?;Driving an output pin three ways and comparing them on a scope: software toggling through HAL, the same through LL, and a pin driven by a timer so the hardware — not the CPU — sets the timing.
+What does toggling a pin via HAL vs LL reveal on a scope?;The raw maximum pin rate and how much faster LL is than HAL — LL is a thin wrapper over the registers with nothing between you and the peripheral, while HAL adds layers of dispatch.
+What does the timer-driven output path show versus busy-wait toggling?;Busy-wait toggling shows the raw maximum edge rate (and HAL vs LL overhead), while the timer path shows precise, low-jitter timing that does not depend on what the CPU is doing — different tools for different jobs.
+How is the timer-driven pin toggled without busy-waiting?;Configure the timer's period (prescaler/ARR) and let its update interrupt toggle the pin in the period-elapsed callback (registered via HAL, or by defining the weak IRQ handler) — jitter-free and CPU-free.
+What board-support abstraction do the labs use?;A small io module hiding the pin wiring behind names — led0..3 for LEDs, getSwitch0..7 for the DIP switches, and lcdWriteDigit/lcdUpdateDisplay for the display — so labs call that layer instead of poking GPIO registers.
+Are the lab code blocks complete solutions?;No — every block is a suggested skeleton (bare-minimum prototypes and structure you fill in), deliberately not a copy of any submitted solution.

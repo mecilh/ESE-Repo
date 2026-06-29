@@ -1,0 +1,14 @@
+#separator:Semicolon
+#html:false
+At heart, what is a timer?;A counter clocked at a known rate. Two registers — the prescaler and the auto-reload — turn that counter into any frequency you need.
+What does the prescaler (PSC) do?;Divides the input clock before it reaches the counter, so the counter ticks at f_clk/(PSC+1). Use it to slow a fast bus clock to a manageable counting rate.
+What does the auto-reload register (ARR, the period) do?;Sets the value the counter counts up to. When the counter reaches ARR it generates an update event (typically an interrupt) and wraps back to 0.
+What is the timer master formula?;f_update = f_clk / ((PSC+1)·(ARR+1)). One period is (ARR+1) counter ticks.
+Why the +1 on PSC and ARR?;The registers are zero-based, so a value of N means divide by N+1. Forget it and every frequency is off by a little — maddening when calibrating a baud rate or servo.
+Why prescale to a round 1 MHz counter?;Each tick is then exactly 1 µs, so ARR and CCR read directly in microseconds — easier to reason about and calibrate, and it leaves headroom in a 16-bit ARR.
+How does a timer generate PWM?;A compare register (CCR) sets a threshold: the output pin is high while count < CCR and low after. ARR sets the PWM frequency (period) and the duty cycle is CCR/(ARR+1).
+In PWM, what sets frequency and what sets duty?;ARR sets the PWM frequency (the period), and the compare value CCR sets the high-time, i.e. the duty cycle = CCR/(ARR+1).
+What roles can the same timer counter serve?;Periodic interrupt (RTOS tick, control loop, sampling), PWM output (compare register), input capture (latch the count on an input edge to measure a pulse width/frequency), output compare/one-shot, encoder counting, and triggering ADC/DMA at precise instants.
+What is input capture?;Latching the counter value on an input edge to measure a pulse width or external frequency.
+How does a servo command differ from ordinary PWM?;A servo wants 50 Hz (20 ms period) where the pulse width carries the command — 1 ms = -90°, 1.5 ms = centre, 2 ms = +90°. The duty cycle is tiny (~7.5%), but writing CCR (=pulse width in µs at a 1 MHz counter) sets the angle, and the timer does the rest in hardware.
+Why does the PSC/ARR split trade range against resolution?;A 16-bit ARR maxes at 65535, so reaching very low frequencies needs a big prescaler (or a 32-bit timer). A smaller prescaler gives finer time resolution per tick but less range.
